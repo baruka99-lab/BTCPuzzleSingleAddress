@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 import ecdsa
 import hashlib
-import base58
+import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
 
@@ -26,7 +25,7 @@ def generate_key_pair(process_id, start_range, end_range):
         checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
 
         # Формирование биткоин-адреса в base58check
-        bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
+        bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
         print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
         print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
@@ -42,7 +41,7 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
-        with open('./found.txt', 'a') as found_file:
+        with open('found.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
             found_file.write(f"Private Key: {private_key.to_string().hex()}\n")
         print("Target Address Found!")
