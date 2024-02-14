@@ -34,7 +34,7 @@ To use the provided program, follow these steps:
 Install Dependencies:
 Ensure that you have the required Python libraries installed. You can install them using the following command:
 
-pip install ecdsa base58check
+pip install base58
 
 Clone the GitHub repository containing the program:
 
