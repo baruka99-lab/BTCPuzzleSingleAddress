@@ -26,8 +26,7 @@ Defines the range for generating secret exponents (start_range to end_range).
 Launches each process with a unique ID to generate key pairs concurrently.
 Closes and joins the pool after the generation is complete.
 Note:
-
-The target Bitcoin address (target_address) is hardcoded, and if a matching address is found, the program writes the address and private key to the found.txt file.
+By default, the script works for Bitcoin Puzzle 66. You can change the target address in the code to any one at your discretion. At the same time, do not forget to change the range in which the script will generate values (start_ranges and end_ranges)
 
 Usage:
 To use the provided program, follow these steps:
@@ -43,7 +42,6 @@ git clone <https://github.com/baruka99-lab/BTCPuzzleSingleAddress.git>
 cd BTCPuzzSingleAdd
 Modify Target Address (Optional):
 Open the script (BTCPuzz.py) in a text editor and update the target_address variable to the Bitcoin address you want to search for.
-Change the start_ranges and end_ranges to the ranges that correspond to the address of the puzzle you have chosen
 
 Run the Program:
 Execute the script using the following command:
