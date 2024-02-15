@@ -29,7 +29,6 @@ Note:
 By default, the script works for Bitcoin Puzzle 66. You can change the target address in the code to any one at your discretion. At the same time, do not forget to change the range in which the script will generate values (start_ranges and end_ranges)
 
 Usage:
-To use the provided program, follow these steps:
 
 Install Dependencies:
 Ensure that you have the required Python libraries installed. You can install them using the following command:
