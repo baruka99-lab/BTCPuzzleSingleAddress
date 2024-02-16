@@ -4,7 +4,8 @@ import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
 
-def generate_key_pair(process_id, start_range, end_range):
+def generate_key_pair(args):
+    process_id, start_range, end_range = args
     while True:
         # Генерация случайного числа в указанном диапазоне
         secret_exponent = secrets.randbelow(end_range - start_range) + start_range
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
 
     # Запуск каждого процесса с уникальным идентификатором
-    pool.starmap(generate_key_pair, [(i, start_range, end_range) for i in range(num_processes)])
+    pool.map(generate_key_pair, [(i, start_range, end_range) for i in range(num_processes)])
 
     pool.close()
     pool.join()
