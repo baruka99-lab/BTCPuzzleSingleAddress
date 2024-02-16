@@ -57,8 +57,8 @@ if __name__ == '__main__':
     pool = Pool(num_processes)
 
     # Указанный диапазон для генерации secret_exponent
-    start_range = int("0000000000000000000000000000000000000000000000200000000000000000", 16)
-    end_range = int("00000000000000000000000000000000000000000000003fffffffffffffffff", 16)
+    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
+    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
 
     # Запуск каждого процесса с уникальным идентификатором
     pool.starmap(generate_key_pair, [(i, start_range, end_range) for i in range(num_processes)])
