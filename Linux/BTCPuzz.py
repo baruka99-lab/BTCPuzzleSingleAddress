@@ -44,7 +44,7 @@ def generate_key_pair(args):
 
 def check_and_write_address(bitcoin_address, private_key, compressed_public_key, process_id):
     # Проверка на наличие конкретного адреса
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
+    target_address = "1HsMJxNiV7TLxmoF6uJNkydxPFDog4NQum"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
         with open('found.txt', 'a') as found_file:
@@ -63,8 +63,8 @@ if __name__ == '__main__':
     pool = Pool(num_processes)
 
     # Указанный диапазон для генерации secret_exponent
-    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
-    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
+    start_range = int("0000000000000000000000000000000000000000000000000000000000080000", 16)
+    end_range = int("00000000000000000000000000000000000000000000000000000000000fffff", 16)
 
     # Запуск каждого процесса с уникальным идентификатором
     pool.map(generate_key_pair, [(i, start_range, end_range) for i in range(num_processes)])
