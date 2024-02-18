@@ -1,4 +1,5 @@
 print("Start! Good Luck!")
+
 import ecdsa
 from Crypto.Hash import RIPEMD160
 import hashlib
