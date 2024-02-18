@@ -1,3 +1,5 @@
+print("Reeady! Set! Go!")
+
 import ecdsa
 from Crypto.Hash import RIPEMD160
 import hashlib
