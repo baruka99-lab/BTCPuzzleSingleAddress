@@ -1,5 +1,6 @@
 print("Start! GoodLuck!")
 
+import hashlib
 import ecdsa
 import hashlib
 import base58check
@@ -8,13 +9,15 @@ import secrets
 
 TARGET_ADDRESS = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
 
-def generate_key_pair(process_id):
     while True:
         secret_exponent = secrets.randbelow(2**66 - 2**65) + 2**65
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
-        public_key_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
-        prefixed_public_key_hash = b'\x00' + public_key_hash
+        
+        # Calculate RIPEMD-160 hash using hashlib
+        ripemd160_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
+
+        prefixed_public_key_hash = b'\x00' + ripemd160_hash
         checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
         bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
