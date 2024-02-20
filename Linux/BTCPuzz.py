@@ -14,7 +14,7 @@ def generate_key_pair(args):
     
     while True:
         # Генерация случайного числа в указанном диапазоне
-        secret_exponent = int.from_bytes(os.urandom(32), byteorder='big') % (end_range - start_range) + start_range
+        secret_exponent = random_generator.randrange(start_range, end_range)
 
         # Преобразование случайного числа в закрытый ключ
         private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1, secret_exponent)
