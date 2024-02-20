@@ -3,9 +3,10 @@ from ellipticcurve.privateKey import PrivateKey
 import multiprocessing
 import hashlib
 import binascii
+import random
 
-def generate_private_key():
-    return binascii.hexlify(os.urandom(32)).decode('utf-8').upper()
+def generate_private_key(start_range, end_range):
+    return hex(random.randint(start_range, end_range))[2:].zfill(64).upper()
 
 def private_key_to_public_key(private_key, fastecdsa):
     if fastecdsa:
@@ -61,8 +62,8 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
     return False
 
 def generate_key_pair(process_id, start_range, end_range):
-    for i in range(start_range, end_range):
-        private_key = hex(i)[2:].zfill(64).upper()
+    while True:
+        private_key = generate_private_key(start_range, end_range)
         public_key = private_key_to_public_key(private_key, True) 
         address = public_key_to_address(public_key)
 
@@ -80,8 +81,8 @@ if __name__ == '__main__':
     process_list = []
 
     # Указанный диапазон для генерации private_key
-    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
-    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
+    start_range = int("0", 16)
+    end_range = int("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 
     for i in range(num_processes):
         process = multiprocessing.Process(target=generate_key_pair, args=(i, start_range, end_range))
