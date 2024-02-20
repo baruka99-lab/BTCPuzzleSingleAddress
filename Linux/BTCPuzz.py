@@ -5,11 +5,11 @@ from multiprocessing import Pool, cpu_count
 import secrets
 from Crypto.Hash import RIPEMD
 
-TARGET_ADDRESS = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+TARGET_ADDRESS = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
 
 def generate_key_pair(process_id):
     while True:
-        secret_exponent = secrets.randbelow(2**25 - 2**24) + 2**24
+        secret_exponent = secrets.randbelow(2**66 - 2**65) + 2**65
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
         
