@@ -4,6 +4,7 @@ import hashlib
 import base58
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
 
 def generate_key_pair(secret_exponent):
     private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
@@ -15,10 +16,14 @@ def generate_key_pair(secret_exponent):
     
     bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
     
+    print(f"Private Key: {private_key.to_string().hex()}")
+    print(f"Compressed Public Key: {compressed_public_key.hex()}")
+    print(f"Bitcoin Address: {bitcoin_address}\n")
+    
     return bitcoin_address, private_key, compressed_public_key
 
 def check_and_write_address(bitcoin_address, private_key, compressed_public_key):
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     if bitcoin_address == target_address:
         with open('found.txt', 'a') as found_file:
             found_file.write(f"Найден целевой адрес: {bitcoin_address}\n")
@@ -36,13 +41,11 @@ def generate_key_pairs(start_range, end_range, num_processes):
         
         for future in as_completed(futures):
             bitcoin_address, private_key, compressed_public_key = future.result()
-            if check_and_write_address(bitcoin_address, private_key, compressed_public_key):
-                return
+            check_and_write_address(bitcoin_address, private_key, compressed_public_key)
 
 if __name__ == '__main__':
     num_processes = cpu_count()
-    start_range = int("0000000000000000000000000000000000000000000000000000000001000000", 16)
-    end_range = int("0000000000000000000000000000000000000000000000000000000001ffffff", 16)
+    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
+    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
 
     generate_key_pairs(start_range, end_range, num_processes)
-
