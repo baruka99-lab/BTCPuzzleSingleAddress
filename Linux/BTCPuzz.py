@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 
 def generate_key_pair(dummy):
+    results = []
     while True:
         secret_exponent = random.SystemRandom().randrange(start_range, end_range + 1)  # Увеличиваем end_range на 1
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
@@ -19,11 +20,12 @@ def generate_key_pair(dummy):
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
         
         result_tuple = (bitcoin_address, private_key, compressed_public_key)
-        print(f"Private Key: {private_key.to_string().hex()}")
-        print(f"Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Bitcoin Address: {bitcoin_address}\n")
-        
-        yield result_tuple
+        results.append(result_tuple)
+
+        if check_and_write_address(result_tuple):
+            break
+
+    return results
 
 def check_and_write_address(result_tuple):
     bitcoin_address, private_key, compressed_public_key = result_tuple
@@ -44,9 +46,7 @@ def generate_key_pairs(num_processes):
         futures = [executor.submit(generate_key_pair, None) for _ in range(num_processes)]
         
         for future in as_completed(futures):
-            result_tuple = future.result()
-            if check_and_write_address(result_tuple):
-                break
+            _ = future.result()  # We discard the result as we are processing within the function
 
 if __name__ == '__main__':
     num_processes = cpu_count()
