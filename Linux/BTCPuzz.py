@@ -3,11 +3,10 @@ from Crypto.Hash import SHA256
 import hashlib
 import base58
 import random
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
 def generate_key_pair(dummy):
-    results = []
     while True:
         secret_exponent = random.SystemRandom().randrange(start_range, end_range + 1)  # Увеличиваем end_range на 1
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
@@ -19,16 +18,14 @@ def generate_key_pair(dummy):
         
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
         
-        result_tuple = (bitcoin_address, private_key, compressed_public_key)
-        results.append(result_tuple)
-
-        if check_and_write_address(result_tuple):
+        print(f"Private Key: {private_key.to_string().hex()}")
+        print(f"Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Bitcoin Address: {bitcoin_address}\n")
+        
+        if check_and_write_address(bitcoin_address, private_key, compressed_public_key):
             break
 
-    return results
-
-def check_and_write_address(result_tuple):
-    bitcoin_address, private_key, compressed_public_key = result_tuple
+def check_and_write_address(bitcoin_address, private_key, compressed_public_key):
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     if bitcoin_address == target_address:
         with open('found.txt', 'a') as found_file:
@@ -43,10 +40,7 @@ def check_and_write_address(result_tuple):
 
 def generate_key_pairs(num_processes):
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        futures = [executor.submit(generate_key_pair, None) for _ in range(num_processes)]
-        
-        for future in as_completed(futures):
-            _ = future.result()  # We discard the result as we are processing within the function
+        executor.map(generate_key_pair, [None] * num_processes)
 
 if __name__ == '__main__':
     num_processes = cpu_count()
