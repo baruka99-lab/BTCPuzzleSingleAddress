@@ -6,15 +6,15 @@ import binascii
 import random
 
 def generate_private_key():
-    return hex(random.randint(0x200000000000000000000000000000000000000000000000, 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x1)[2:].zfill(64).upper()
+    return hex(random.randint(0x0000000000000000000000000000000000000000000000000000000001000000, 0x0000000000000000000000000000000000000000000000000000000001ffffff) | 0x1)[2:].zfill(64).upper()
 
-def private_key_to_public_key(private_key, fastecdsa):
-    if fastecdsa:
+def private_key_to_public_key(private_key, compressed=True):
+    if compressed:
+        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
+        return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
+    else:
         key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
         return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
-    else:
-        pk = PrivateKey().fromString(bytes.fromhex(private_key))
-        return '04' + pk.publicKey().toString().hex().upper()
 
 def public_key_to_address(public_key):
     output = []
@@ -52,7 +52,7 @@ def private_key_to_wif(private_key):
 
 def check_and_write_address(bitcoin_address, private_key, process_id):
     # Проверка на наличие конкретного адреса
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
     if bitcoin_address == target_address:
         print("Целевой адрес найден!")
         print(f"Процесс {process_id}: Закрытый ключ: {private_key}")
@@ -64,14 +64,14 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
 def generate_key_pair(process_id):
     while True:
         private_key = generate_private_key()
-        public_key = private_key_to_public_key(private_key, True) 
+        public_key = private_key_to_public_key(private_key, compressed=True) 
         address = public_key_to_address(public_key)
 
         if address[-4:] == "TEST":  # Проверка на "TEST" для ускорения процесса
             continue
 
         print(f"Процесс {process_id}: Закрытый ключ: {private_key}")
-        print(f"Процесс {process_id}: Bitcoin-адрес: {address}\n")
+        print(f"Процесс {process_id}: Сжатый Bitcoin-адрес: {address}\n")
 
         if check_and_write_address(address, private_key, process_id):
             break
