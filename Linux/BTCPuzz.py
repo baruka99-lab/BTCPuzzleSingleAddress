@@ -6,9 +6,13 @@ import random
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
+# Определите start_range и end_range
+start_range = (2**66 - 2**65) + 2**65
+end_range = 2**66 - 1
+
 def generate_key_pair(dummy):
     while True:
-        secret_exponent = random.SystemRandom().randrange(start_range, end_range + 1)  # Увеличиваем end_range на 1
+        secret_exponent = random.SystemRandom().randrange(start_range, end_range + 1)
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
         
@@ -44,7 +48,5 @@ def generate_key_pairs(num_processes):
 
 if __name__ == '__main__':
     num_processes = cpu_count()
-    start_range = (2**66 - 2**65) + 2**65
-    end_range = 2**66 - 1
 
     generate_key_pairs(num_processes)
