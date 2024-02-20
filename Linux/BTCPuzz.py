@@ -18,7 +18,7 @@ def generate_key_pair(secret_exponent):
     return bitcoin_address, private_key, compressed_public_key
 
 def check_and_write_address(bitcoin_address, private_key, compressed_public_key):
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
     if bitcoin_address == target_address:
         with open('found.txt', 'a') as found_file:
             found_file.write(f"Найден целевой адрес: {bitcoin_address}\n")
@@ -41,8 +41,8 @@ def generate_key_pairs(start_range, end_range, num_processes):
 
 if __name__ == '__main__':
     num_processes = cpu_count()
-    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
-    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
+    start_range = int("0000000000000000000000000000000000000000000000000000000001000000", 16)
+    end_range = int("0000000000000000000000000000000000000000000000000000000001ffffff", 16)
 
     generate_key_pairs(start_range, end_range, num_processes)
 
