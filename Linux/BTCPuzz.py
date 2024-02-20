@@ -2,11 +2,12 @@ import ecdsa
 from Crypto.Hash import SHA256
 import hashlib
 import base58
-import numpy as np
+import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 
-def generate_key_pair(secret_exponent):
+def generate_key_pair(dummy):
+    secret_exponent = random.randint(start_range, end_range)
     private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
     compressed_public_key = private_key.get_verifying_key().to_string("compressed")
     
@@ -37,7 +38,7 @@ def check_and_write_address(bitcoin_address, private_key, compressed_public_key)
 
 def generate_key_pairs(start_range, end_range, num_processes):
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        futures = [executor.submit(generate_key_pair, secret_exponent) for secret_exponent in np.random.randint(start_range, np.uint64(end_range), num_processes)]
+        futures = [executor.submit(generate_key_pair, None) for _ in range(num_processes)]
         
         for future in as_completed(futures):
             bitcoin_address, private_key, compressed_public_key = future.result()
