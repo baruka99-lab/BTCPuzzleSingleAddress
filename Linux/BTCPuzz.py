@@ -6,7 +6,7 @@ import binascii
 import random
 
 def generate_private_key():
-    return hex(random.randint(0x200000000000000000000000000000000000000000000000, 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF))[2:].zfill(64).upper()
+    return hex(random.randint(0x200000000000000000000000000000000000000000000000, 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x1)[2:].zfill(64).upper()
 
 def private_key_to_public_key(private_key, fastecdsa):
     if fastecdsa:
