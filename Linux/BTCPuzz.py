@@ -5,8 +5,8 @@ import hashlib
 import binascii
 import random
 
-def generate_private_key(start_range, end_range):
-    return hex(random.randint(start_range, end_range))[2:].zfill(64).upper()
+def generate_private_key():
+    return hex(random.randint(0x200000000000000000000000000000000000000000000000, 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF))[2:].zfill(64).upper()
 
 def private_key_to_public_key(private_key, fastecdsa):
     if fastecdsa:
@@ -61,9 +61,9 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
 
     return False
 
-def generate_key_pair(process_id, start_range, end_range):
+def generate_key_pair(process_id):
     while True:
-        private_key = generate_private_key(start_range, end_range)
+        private_key = generate_private_key()
         public_key = private_key_to_public_key(private_key, True) 
         address = public_key_to_address(public_key)
 
@@ -80,12 +80,8 @@ if __name__ == '__main__':
     num_processes = multiprocessing.cpu_count()
     process_list = []
 
-    # Указанный диапазон для генерации private_key
-    start_range = int("0", 16)
-    end_range = int("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
-
     for i in range(num_processes):
-        process = multiprocessing.Process(target=generate_key_pair, args=(i, start_range, end_range))
+        process = multiprocessing.Process(target=generate_key_pair, args=(i,))
         process_list.append(process)
         process.start()
 
