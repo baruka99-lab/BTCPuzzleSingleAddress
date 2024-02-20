@@ -6,6 +6,7 @@ import hashlib
 import base58
 from multiprocessing import Pool, cpu_count
 import random
+import os
 
 def generate_key_pair(args):
     process_id, start_range, end_range = args
@@ -13,10 +14,10 @@ def generate_key_pair(args):
     
     while True:
         # Генерация случайного числа в указанном диапазоне
-        secret_exponent = random_generator.randrange(start_range, end_range)
+        secret_exponent = int.from_bytes(os.urandom(32), byteorder='big') % (end_range - start_range) + start_range
 
         # Преобразование случайного числа в закрытый ключ
-        private_key = keys.gen_private_key(fastecdsa.curve.secp256k1, secret_exponent)
+        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1, secret_exponent)
 
         # Получение сжатого открытого ключа
         compressed_public_key = ecdsa.get_public_key(private_key)
