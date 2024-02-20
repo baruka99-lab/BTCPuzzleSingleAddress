@@ -3,6 +3,7 @@ import ecdsa
 import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
+from Crypto.Hash import RIPEMD
 
 TARGET_ADDRESS = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
 
@@ -12,7 +13,8 @@ def generate_key_pair(process_id):
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
         
-        ripemd160_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
+        # Calculate RIPEMD-160 hash using pycryptodome
+        ripemd160_hash = RIPEMD.new(hashlib.sha256(compressed_public_key).digest()).digest()
 
         prefixed_public_key_hash = b'\x00' + ripemd160_hash
         checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
