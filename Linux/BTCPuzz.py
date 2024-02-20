@@ -18,13 +18,15 @@ def generate_key_pair(dummy):
         
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
         
+        result_tuple = (bitcoin_address, private_key, compressed_public_key)
         print(f"Private Key: {private_key.to_string().hex()}")
         print(f"Compressed Public Key: {compressed_public_key.hex()}")
         print(f"Bitcoin Address: {bitcoin_address}\n")
         
-        yield bitcoin_address, private_key, compressed_public_key
+        yield result_tuple
 
-def check_and_write_address(bitcoin_address, private_key, compressed_public_key):
+def check_and_write_address(result_tuple):
+    bitcoin_address, private_key, compressed_public_key = result_tuple
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     if bitcoin_address == target_address:
         with open('found.txt', 'a') as found_file:
@@ -42,8 +44,8 @@ def generate_key_pairs(num_processes):
         futures = [executor.submit(generate_key_pair, None) for _ in range(num_processes)]
         
         for future in as_completed(futures):
-            bitcoin_address, private_key, compressed_public_key = future.result()
-            if check_and_write_address(bitcoin_address, private_key, compressed_public_key):
+            result_tuple = future.result()
+            if check_and_write_address(result_tuple):
                 break
 
 if __name__ == '__main__':
