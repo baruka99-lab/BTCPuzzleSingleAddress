@@ -44,7 +44,7 @@ def generate_key_pairs(num_processes):
 
 if __name__ == '__main__':
     num_processes = cpu_count()
-    start_range = 0
+    start_range = (2**66 - 2**65) + 2**65
     end_range = 2**66 - 1
 
     generate_key_pairs(num_processes)
