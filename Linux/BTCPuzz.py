@@ -1,11 +1,11 @@
 print("Start! Good Luck!")
 
-import ecdsa
 from Crypto.Hash import RIPEMD160
 import hashlib
 import base58
 from multiprocessing import Pool, cpu_count
 import random
+import fastecdsa
 
 def generate_key_pair(args):
     process_id, start_range, end_range = args
@@ -16,10 +16,10 @@ def generate_key_pair(args):
         secret_exponent = random_generator.randrange(start_range, end_range)
 
         # Преобразование случайного числа в закрытый ключ
-        private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
+        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1, secret_exponent)
 
         # Получение сжатого открытого ключа
-        compressed_public_key = private_key.get_verifying_key().to_string("compressed")
+        compressed_public_key = fastecdsa.keys.get_public_key(private_key, curve=fastecdsa.curve.secp256k1, hashfunc=hashlib.sha256)
 
         # Хэширование открытого ключа для получения отпечатка с использованием RIPEMD-160
         ripemd160_hash = RIPEMD160.new(hashlib.sha256(compressed_public_key).digest()).digest()
@@ -33,7 +33,7 @@ def generate_key_pair(args):
         # Формирование Bitcoin-адреса в кодировке base58
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        #print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        #print(f"Process {process_id}: Private Key: {private_key.to_hex()}")
         #print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
         #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
@@ -44,14 +44,14 @@ def generate_key_pair(args):
 
 def check_and_write_address(bitcoin_address, private_key, compressed_public_key, process_id):
     # Проверка на наличие конкретного адреса
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
         with open('found.txt', 'a') as found_file:
             found_file.write(f"Найден целевой адрес: {bitcoin_address}\n")
-            found_file.write(f"Закрытый ключ: {private_key.to_string().hex()}\n")
+            found_file.write(f"Закрытый ключ: {private_key.to_hex()}\n")
         print("Целевой адрес найден!")
-        print(f"Процесс {process_id}: Закрытый ключ: {private_key.to_string().hex()}")
+        print(f"Процесс {process_id}: Закрытый ключ: {private_key.to_hex()}")
         print(f"Процесс {process_id}: Сжатый открытый ключ: {compressed_public_key.hex()}")
         print(f"Процесс {process_id}: Bitcoin-адрес: {bitcoin_address}\n")
         return True
@@ -63,8 +63,8 @@ if __name__ == '__main__':
     pool = Pool(num_processes)
 
     # Указанный диапазон для генерации secret_exponent
-    start_range = int("0000000000000000000000000000000000000000000000020000000000000000", 16)
-    end_range = int("000000000000000000000000000000000000000000000003ffffffffffffffff", 16)
+    start_range = int("0000000000000000000000000000000000000000000000000000000001000000", 16)
+    end_range = int("0000000000000000000000000000000000000000000000000000000001ffffff", 16)
 
     # Запуск каждого процесса с уникальным идентификатором
     pool.map(generate_key_pair, [(i, start_range, end_range) for i in range(num_processes)])
