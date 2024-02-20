@@ -3,7 +3,6 @@ from ellipticcurve.privateKey import PrivateKey
 import multiprocessing
 import hashlib
 import binascii
-import os
 
 def generate_private_key():
     return binascii.hexlify(os.urandom(32)).decode('utf-8').upper()
@@ -54,10 +53,6 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
     # Проверка на наличие конкретного адреса
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
     if bitcoin_address == target_address:
-        # Запись найденного адреса в файл
-        with open('found.txt', 'a') as found_file:
-            found_file.write(f"Найден целевой адрес: {bitcoin_address}\n")
-            found_file.write(f"Закрытый ключ: {private_key}\n")
         print("Целевой адрес найден!")
         print(f"Процесс {process_id}: Закрытый ключ: {private_key}")
         print(f"Процесс {process_id}: Bitcoin-адрес: {bitcoin_address}\n")
@@ -66,13 +61,16 @@ def check_and_write_address(bitcoin_address, private_key, process_id):
     return False
 
 def generate_key_pair(process_id, start_range, end_range):
-    while True:
-        private_key = hex(start_range + process_id)[2:].zfill(64).upper()
+    for i in range(start_range, end_range):
+        private_key = hex(i)[2:].zfill(64).upper()
         public_key = private_key_to_public_key(private_key, True) 
         address = public_key_to_address(public_key)
 
         if address[-4:] == "TEST":  # Проверка на "TEST" для ускорения процесса
             continue
+
+        print(f"Процесс {process_id}: Закрытый ключ: {private_key}")
+        print(f"Процесс {process_id}: Bitcoin-адрес: {address}\n")
 
         if check_and_write_address(address, private_key, process_id):
             break
