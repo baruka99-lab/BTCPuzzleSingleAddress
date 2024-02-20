@@ -1,5 +1,3 @@
-print("Start! GoodLuck!")
-
 import hashlib
 import ecdsa
 import base58check
@@ -14,7 +12,6 @@ def generate_key_pair(process_id):
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
         
-        # Calculate RIPEMD-160 hash using hashlib
         ripemd160_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
 
         prefixed_public_key_hash = b'\x00' + ripemd160_hash
@@ -37,10 +34,9 @@ def check_and_write_address(process_id, compressed_public_key, bitcoin_address, 
     return False
 
 if __name__ == '__main__':
+    print("Старт! Удачи!")
     num_processes = cpu_count()
     pool = Pool(num_processes)
-
     pool.map(generate_key_pair, range(num_processes))
-
     pool.close()
     pool.join()
