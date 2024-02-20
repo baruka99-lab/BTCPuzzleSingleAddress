@@ -1,4 +1,4 @@
-print("Начало! Удачи!")
+print("Start! GoodLuck!")
 
 import ecdsa
 import hashlib
