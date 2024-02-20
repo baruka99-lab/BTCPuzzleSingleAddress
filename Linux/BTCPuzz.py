@@ -1,4 +1,4 @@
-print("Start! Good Luck!")
+print("Начало! Удачи!")
 
 import ecdsa
 import hashlib
@@ -18,21 +18,17 @@ def generate_key_pair(process_id):
         checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
         bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        #print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        #print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-
-        if check_and_write_address(bitcoin_address, private_key):
+        if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
             break
 
-def check_and_write_address(bitcoin_address, private_key):
+def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
     if bitcoin_address == TARGET_ADDRESS:
         with open('found.txt', 'a') as found_file:
-            found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key: {private_key.to_string().hex()}\n")
-        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+            found_file.write(f"Найден Целевой Адрес: {bitcoin_address}\n")
+            found_file.write(f"Приватный Ключ: {private_key.to_string().hex()}\n")
+        print(f"Процесс {process_id}: Приватный Ключ: {private_key.to_string().hex()}")
+        print(f"Процесс {process_id}: Сжатый Публичный Ключ: {compressed_public_key.hex()}")
+        print(f"Процесс {process_id}: Биткоин-Адрес: {bitcoin_address}\n")
         return True
 
     return False
