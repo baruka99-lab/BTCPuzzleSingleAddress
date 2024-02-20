@@ -37,7 +37,7 @@ def check_and_write_address(bitcoin_address, private_key, compressed_public_key)
 
 def generate_key_pairs(start_range, end_range, num_processes):
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        futures = [executor.submit(generate_key_pair, secret_exponent) for secret_exponent in np.random.randint(start_range, end_range, num_processes)]
+        futures = [executor.submit(generate_key_pair, secret_exponent) for secret_exponent in np.random.randint(start_range, np.uint64(end_range), num_processes)]
         
         for future in as_completed(futures):
             bitcoin_address, private_key, compressed_public_key = future.result()
