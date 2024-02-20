@@ -1,11 +1,10 @@
-print("Start! Good Luck!")
-
-import ecdsa
-from Crypto.Hash import RIPEMD160
+import binascii
+import os
 import hashlib
 import base58
 from multiprocessing import Pool, cpu_count
-import os
+import ecdsa
+from Crypto.Hash import RIPEMD160
 from fastecdsa import keys, curve
 
 def generate_private_key():
@@ -21,13 +20,15 @@ def generate_key_pair(args):
     while True:
         # Генерация случайного закрытого ключа
         if use_fastecdsa:
-            private_key = generate_fastecdsa_private_key()
+            private_key_hex = generate_fastecdsa_private_key()
         else:
-            private_key = generate_private_key()
+            private_key_hex = generate_private_key()
+
+        # Преобразование шестнадцатеричного представления в целое число
+        private_key_int = int(private_key_hex, 16)
 
         # Преобразование закрытого ключа в объект ecdsa.SigningKey
-        private_key = int(private_key, 16)
-        private_key = ecdsa.SigningKey.from_secret_exponent(private_key, curve=ecdsa.SECP256k1)
+        private_key = ecdsa.SigningKey.from_secret_exponent(private_key_int, curve=ecdsa.SECP256k1)
 
         # Получение сжатого открытого ключа
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
