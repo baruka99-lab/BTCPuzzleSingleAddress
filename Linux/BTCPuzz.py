@@ -6,8 +6,6 @@ import hashlib
 import base58
 from multiprocessing import Pool, cpu_count
 import random
-import os
-from binascii import hexlify
 
 def generate_key_pair(args):
     process_id, start_range, end_range = args
