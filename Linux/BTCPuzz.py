@@ -6,15 +6,15 @@ import binascii
 import random
 
 def generate_private_key():
-    return hex(random.randint(0x0000000000000000000000000000000000000000000000000000000001000000, 0x0000000000000000000000000000000000000000000000000000000001ffffff) | 0x1)[2:].zfill(64).upper()
+    return format(random.randint(0, 0x1FFFFFF) & 0x01FFFFFF, '05x').upper()
 
 def private_key_to_public_key(private_key, compressed=True):
     if compressed:
-        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
-        return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
+        key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
+        return '02' + format(key.x, '064x').upper() if key.y % 2 == 0 else '03' + format(key.x, '064x').upper()
     else:
-        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
-        return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
+        key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
+        return '04' + (format(key.x, '064x').upper() + format(key.y, '064x').upper())
 
 def public_key_to_address(public_key):
     output = []
