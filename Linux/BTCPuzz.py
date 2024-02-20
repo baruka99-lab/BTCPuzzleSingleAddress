@@ -1,43 +1,82 @@
 print("Start! Good Luck!")
 
-import fastecdsa
-from fastecdsa import ecdsa, keys
+from fastecdsa import keys, curve
+from ellipticcurve.privateKey import PrivateKey
+import platform
+import multiprocessing
 import hashlib
-import base58
-from multiprocessing import Pool, cpu_count
-import random
+import binascii
 import os
+import sys
 
-def generate_key_pair(args):
-    process_id, start_range, end_range = args
-    random_generator = random.SystemRandom()
-    
+def generate_private_key():
+    return binascii.hexlify(os.urandom(32)).decode('utf-8').upper()
+
+def private_key_to_public_key(private_key, fastecdsa):
+    if fastecdsa:
+        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
+        return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
+    else:
+        pk = PrivateKey().fromString(bytes.fromhex(private_key))
+        return '04' + pk.publicKey().toString().hex().upper()
+
+def public_key_to_address(public_key):
+    output = []
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    var = hashlib.new('ripemd160')
+    encoding = binascii.unhexlify(public_key.encode())
+    var.update(hashlib.sha256(encoding).digest())
+    var_encoded = ('00' + var.hexdigest()).encode()
+    digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
+    var_hex = '00' + var.hexdigest() + hashlib.sha256(digest).hexdigest()[0:8]
+    count = [char != '0' for char in var_hex].index(True) // 2
+    n = int(var_hex, 16)
+    while n > 0:
+        n, remainder = divmod(n, 58)
+        output.append(alphabet[remainder])
+    for i in range(count): output.append(alphabet[0])
+    return ''.join(output[::-1])
+
+def private_key_to_wif(private_key):
+    digest = hashlib.sha256(binascii.unhexlify('80' + private_key)).hexdigest()
+    var = hashlib.sha256(binascii.unhexlify(digest)).hexdigest()
+    var = binascii.unhexlify('80' + private_key + var[0:8])
+    alphabet = chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    value = pad = 0
+    result = ''
+    for i, c in enumerate(var[::-1]): value += 256**i * c
+    while value >= len(alphabet):
+        div, mod = divmod(value, len(alphabet))
+        result, value = chars[mod] + result, div
+    result = chars[value] + result
+    for c in var:
+        if c == 0: pad += 1
+        else: break
+    return chars[0] * pad + result
+
+def main(database, args):
     while True:
-        # Генерация случайного числа в указанном диапазоне
-        secret_exponent = random_generator.randrange(start_range, end_range)
+        private_key = generate_private_key()
+        public_key = private_key_to_public_key(private_key, args['fastecdsa']) 
+        address = public_key_to_address(public_key)
 
-        # Преобразование случайного числа в закрытый ключ
-        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1, secret_exponent)
+        if args['verbose']:
+            print(address)
+        
+        if address[-args['substring']:] in database:
+            for filename in os.listdir(DATABASE):
+                with open(DATABASE + filename) as file:
+                    if address in file.read():
+                        with open('plutus.txt', 'a') as plutus:
+                            plutus.write('hex private key: ' + str(private_key) + '\n' +
+                                         'WIF private key: ' + str(private_key_to_wif(private_key)) + '\n'
+                                         'public key: ' + str(public_key) + '\n' +
+                                         'uncompressed address: ' + str(address) + '\n\n')
+                        break
 
-        # Получение сжатого открытого ключа
-        compressed_public_key = ecdsa.get_public_key(private_key)
-
-        # Хэширование открытого ключа для получения отпечатка с использованием SHA-256
-        sha256_hash = hashlib.sha256(compressed_public_key.to_bytes()).digest()
-
-        # Хэширование SHA-256 для получения отпечатка с использованием RIPEMD-160
-        ripemd160_hash = hashlib.new('ripemd160')
-        ripemd160_hash.update(sha256_hash)
-        ripemd160_hash = ripemd160_hash.digest()
-
-        # Добавление префикса к хэшу (для Bitcoin-адреса)
-        prefixed_public_key_hash = b'\x00' + ripemd160_hash  # 0x00 для основной сети
-
-        # Вычисление контрольной суммы
-        checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
-
-        # Формирование Bitcoin-адреса в кодировке base58
-        bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
+        #print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        #print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
         # Проверка и запись в файл found.txt или address.txt
         if check_and_write_address(bitcoin_address, private_key, compressed_public_key, process_id):
@@ -51,10 +90,10 @@ def check_and_write_address(bitcoin_address, private_key, compressed_public_key,
         # Запись найденного адреса в файл
         with open('found.txt', 'a') as found_file:
             found_file.write(f"Найден целевой адрес: {bitcoin_address}\n")
-            found_file.write(f"Закрытый ключ: {private_key.to_bytes().hex()}\n")
+            found_file.write(f"Закрытый ключ: {private_key.to_string().hex()}\n")
         print("Целевой адрес найден!")
-        print(f"Процесс {process_id}: Закрытый ключ: {private_key.to_bytes().hex()}")
-        print(f"Процесс {process_id}: Сжатый открытый ключ: {compressed_public_key.to_bytes().hex()}")
+        print(f"Процесс {process_id}: Закрытый ключ: {private_key.to_string().hex()}")
+        print(f"Процесс {process_id}: Сжатый открытый ключ: {compressed_public_key.hex()}")
         print(f"Процесс {process_id}: Bitcoin-адрес: {bitcoin_address}\n")
         return True
 
