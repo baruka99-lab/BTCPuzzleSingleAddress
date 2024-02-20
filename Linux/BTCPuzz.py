@@ -6,7 +6,7 @@ import binascii
 import random
 
 def generate_private_key():
-    return format(random.randint(0, 0x1FFFFFF) & 0x01FFFFFF, '05x').upper()
+    return format(random.randint(0, 0x1FFFFFF) & 0x01FFFFFF, '06x').upper().zfill(6)
 
 def private_key_to_public_key(private_key, compressed=True):
     if compressed:
@@ -52,7 +52,7 @@ def private_key_to_wif(private_key):
 
 def check_and_write_address(bitcoin_address, private_key, process_id):
     # Проверка на наличие конкретного адреса
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
     if bitcoin_address == target_address:
         print("Целевой адрес найден!")
         print(f"Процесс {process_id}: Закрытый ключ: {private_key}")
