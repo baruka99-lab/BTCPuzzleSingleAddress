@@ -2,13 +2,13 @@ print("Start! GoodLuck!")
 
 import hashlib
 import ecdsa
-import hashlib
 import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
 
 TARGET_ADDRESS = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
 
+def generate_key_pair(process_id):
     while True:
         secret_exponent = secrets.randbelow(2**66 - 2**65) + 2**65
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
