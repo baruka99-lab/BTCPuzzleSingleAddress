@@ -1,5 +1,3 @@
-print("Start Project13")
-
 import ecdsa
 import hashlib
 import base58
