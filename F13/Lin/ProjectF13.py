@@ -4,9 +4,7 @@ import base58
 import secrets
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager
-from ripemd160 import ripemd160  # Импортируем функцию ripemd160 из библиотеки ripemd160
-
-# ...
+from Crypto.Hash import RIPEMD
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -15,7 +13,7 @@ def generate_key_pair(private_key):
 
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
-    ripemd160_hash = ripemd160(sha256_hash).digest()
+    ripemd160_hash = RIPEMD.new(sha256_hash).digest()
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
@@ -28,9 +26,6 @@ def generate_and_check_target(target_address, stop_flag, output_file):
             # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
             private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
-
-            # print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
-            # print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
