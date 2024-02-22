@@ -10,7 +10,7 @@ CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
     lower_limit = 2**65
-    upper_limit = (2**66 - 2**64) - 1
+    upper_limit = (2**66 - 2**65) - 1
     random_value = int.from_bytes(os.urandom(8), byteorder='big')
     private_key = hex(random_value % (upper_limit - lower_limit + 1) + lower_limit)[2:]
     return private_key.upper()
