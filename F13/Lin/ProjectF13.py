@@ -1,12 +1,11 @@
 import os
-import pickle
 import hashlib
 import binascii
 import multiprocessing
 from fastecdsa import keys, curve
 
 # Укажите свои адреса вместо предполагаемых значений
-CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
+CUSTOM_ADDRESSES = ["address1", "address2", "address3"]
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
@@ -39,11 +38,10 @@ def public_key_to_address(public_key):
 
 def process(private_key, public_key, address, custom_addresses):
     """Check if the address is in the custom addresses list."""
+    print(f'Generated Bitcoin Address: {address}')
+    print(f'Corresponding Private Key: {private_key}\n')
     if address in custom_addresses:
-        with open('plutus.txt', 'a') as file:
-            file.write('hex private key: ' + str(private_key) + '\n' +
-                       'public key: ' + str(public_key) + '\n' +
-                       'address: ' + str(address) + '\n\n')
+        print('This address is in the custom addresses list!\n')
 
 def main(custom_addresses):
     """Main pipeline using multiprocessing."""
