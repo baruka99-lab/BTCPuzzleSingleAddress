@@ -1,56 +1,61 @@
-import ecdsa
+import os
+import pickle
 import hashlib
-import base58
-import secrets
-from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import Manager
-from Crypto.Hash import RIPEMD
+import binascii
+import multiprocessing
+from fastecdsa import keys, curve
 
-def generate_key_pair(private_key):
-    curve = ecdsa.SECP256k1
-    base_point = curve.generator
-    base_private_key_point = base_point * private_key
+# Укажите свои адреса вместо предполагаемых значений
+CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
 
-    base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
-    ripemd160_hash = RIPEMD.new(sha256_hash).digest()
-    network_byte = b"\x00"
-    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
-    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
+def generate_private_key():
+    """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
+    return binascii.hexlify(os.urandom(8)).decode('utf-8').upper()
 
-    return private_key, address
+def private_key_to_public_key(private_key):
+    """Convert hex private key to its respective public key."""
+    c = int('0x%s' % private_key, 0)
+    d = keys.get_public_key(c, curve.secp256k1)
+    return '04%s%s' % ('{0:x}'.format(int(d.x)), '{0:x}'.format(int(d.y)))
 
-def generate_and_check_target(target_address, stop_flag, output_file):
+def public_key_to_address(public_key):
+    """Convert public key to its respective P2PKH wallet address."""
+    output = []
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    var = hashlib.new('ripemd160')
     try:
-        while not stop_flag.is_set():
-            # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
-            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
-            current_private_key, current_address = generate_key_pair(private_key)
+        var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
+        var = '00' + var.hexdigest() + hashlib.sha256(
+            hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()[0:8]
+        count = [char != '0' for char in var].index(True) // 2
+        n = int(var, 16)
+        while n > 0:
+            n, remainder = divmod(n, 58)
+            output.append(alphabet[remainder])
+        for i in range(count): output.append(alphabet[0])
+        return ''.join(output[::-1])
+    except:
+        return -1
 
-            if current_address == target_address:
-                print(f"Найден целевой биткоин-адрес: {target_address}")
-                print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
-                stop_flag.set()
+def process(private_key, public_key, address, custom_addresses):
+    """Check if the address is in the custom addresses list."""
+    if address in custom_addresses:
+        with open('plutus.txt', 'a') as file:
+            file.write('hex private key: ' + str(private_key) + '\n' +
+                       'public key: ' + str(public_key) + '\n' +
+                       'address: ' + str(address) + '\n\n')
 
-                # Запись в файл
-                with open(output_file, "a") as file:
-                    file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                    file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+def main(custom_addresses):
+    """Main pipeline using multiprocessing."""
+    while True:
+        private_key = generate_private_key()[:16]  # 66 bits
+        public_key = private_key_to_public_key(private_key)
+        address = public_key_to_address(public_key)
+        if address != -1:
+            process(private_key, public_key, address, custom_addresses)
 
-                break
+if __name__ == '__main__':
+    custom_addresses = set(CUSTOM_ADDRESSES)
 
-    except KeyboardInterrupt:
-        pass
-
-if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
-    output_file = "F13.txt"
-
-    with ProcessPoolExecutor() as process_executor, Manager() as manager:
-        stop_flag = manager.Event()
-        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
-
-        for future in futures:
-            future.result()
-
-    print("Программа завершена.")
+    for cpu in range(multiprocessing.cpu_count()):
+        multiprocessing.Process(target=main, args=(custom_addresses,)).start()
