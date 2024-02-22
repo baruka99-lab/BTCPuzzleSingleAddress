@@ -58,18 +58,28 @@ def process(private_key, public_key, address, custom_addresses):
 
 def main(custom_addresses):
     """Main pipeline using multiprocessing."""
-    while True:
-        private_key = generate_private_key()  # 66 bits
-        if private_key is None:
-            continue
+    try:
+        while True:
+            private_key = generate_private_key()  # 66 bits
+            if private_key is None:
+                continue
 
-        public_key = private_key_to_public_key(private_key)
-        address = public_key_to_address(public_key)
-        if address != -1:
-            process(private_key, public_key, address, custom_addresses)
+            public_key = private_key_to_public_key(private_key)
+            address = public_key_to_address(public_key)
+            if address != -1:
+                process(private_key, public_key, address, custom_addresses)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.stdout.flush()
 
 if __name__ == '__main__':
     custom_addresses = set(CUSTOM_ADDRESSES)
 
+    processes = []
     for cpu in range(multiprocessing.cpu_count()):
-        multiprocessing.Process(target=main, args=(custom_addresses,)).start()
+        p = multiprocessing.Process(target=main, args=(custom_addresses,))
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
