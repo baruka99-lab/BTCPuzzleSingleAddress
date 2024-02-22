@@ -12,6 +12,11 @@ def generate_private_key():
     lower_limit = 2**65
     upper_limit = (2**66 - 2**65) - 1
     random_value = int.from_bytes(os.urandom(8), byteorder='big')
+    
+    # Проверка на деление на ноль
+    if (upper_limit - lower_limit + 1) == 0:
+        return generate_private_key()
+    
     private_key = hex(random_value % (upper_limit - lower_limit + 1) + lower_limit)[2:]
     return private_key.upper()
 
