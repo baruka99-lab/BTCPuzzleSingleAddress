@@ -1,7 +1,7 @@
 import os
 import hashlib
 import binascii
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from fastecdsa import keys, curve
 import sys
 
@@ -49,9 +49,8 @@ def public_key_to_address(public_key):
 def process(private_key, public_key, address, custom_addresses):
     """Check if the address is in the custom addresses list."""
     if address in custom_addresses:
-        print(f'\nGenerated Bitcoin Address: {address}')
-        print(f'Corresponding Private Key: {private_key}')
-        print('This address is in the custom addresses list!\n')
+        print(f'Generated Bitcoin Address: {address}')
+        print(f'Corresponding Private Key: {private_key}\n')
 
 def generate_and_process_keys(custom_addresses):
     while True:
@@ -66,12 +65,8 @@ if __name__ == '__main__':
     custom_addresses = set(CUSTOM_ADDRESSES)
     processes = os.cpu_count()
 
-    try:
-        with ProcessPoolExecutor(max_workers=processes) as executor:
-            futures = [executor.submit(generate_and_process_keys, custom_addresses) for _ in range(processes)]
+    with ProcessPoolExecutor(max_workers=processes) as executor:
+        futures = [executor.submit(generate_and_process_keys, custom_addresses) for _ in range(processes)]
 
-            for future in as_completed(futures):
-                future.result()
-    except KeyboardInterrupt:
-        print("\nProgram interrupted. Exiting.")
-        sys.exit(0)
+        for future in futures:
+            future.result()
