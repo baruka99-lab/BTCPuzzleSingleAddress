@@ -5,7 +5,7 @@ import multiprocessing
 from fastecdsa import keys, curve
 
 # Укажите свои адреса вместо предполагаемых значений
-CUSTOM_ADDRESSES = ["address1", "address2", "address3"]
+CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
