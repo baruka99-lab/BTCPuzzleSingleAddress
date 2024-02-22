@@ -5,20 +5,20 @@ import multiprocessing
 from fastecdsa import keys, curve
 
 # Укажите свои адреса вместо предполагаемых значений
-CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
+CUSTOM_ADDRESSES = ["address1", "address2", "address3"]
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
     return binascii.hexlify(os.urandom(8)).decode('utf-8').upper()
 
 def private_key_to_public_key(private_key):
-    """Convert hex private key to its respective public key."""
+    """Convert hex private key to its respective compressed public key."""
     c = int('0x%s' % private_key, 0)
     d = keys.get_public_key(c, curve.secp256k1)
-    return '04%s%s' % ('{0:x}'.format(int(d.x)), '{0:x}'.format(int(d.y)))
+    return '02%s' % ('{0:x}'.format(int(d.x)))
 
 def public_key_to_address(public_key):
-    """Convert public key to its respective P2PKH wallet address."""
+    """Convert compressed public key to its respective P2PKH wallet address."""
     output = []
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
