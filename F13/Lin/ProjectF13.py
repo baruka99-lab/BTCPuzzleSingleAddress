@@ -15,7 +15,7 @@ def generate_private_key():
     
     # Проверка на деление на ноль
     if (upper_limit - lower_limit + 1) == 0:
-        return generate_private_key()
+        return None
     
     private_key = hex(random_value % (upper_limit - lower_limit + 1) + lower_limit)[2:]
     return private_key.upper()
@@ -56,6 +56,9 @@ def main(custom_addresses):
     """Main pipeline using multiprocessing."""
     while True:
         private_key = generate_private_key()  # 66 bits
+        if private_key is None:
+            continue
+
         public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
         if address != -1:
