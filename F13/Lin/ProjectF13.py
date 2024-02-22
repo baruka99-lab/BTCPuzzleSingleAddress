@@ -32,7 +32,7 @@ def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
     try:
-        var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
+        var.update(hashlib.sha256(binascii.unhexlify(public_key)).digest())
         var = '00' + var.hexdigest() + hashlib.sha256(
             hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()[0:8]
         count = [char != '0' for char in var].index(True) // 2
