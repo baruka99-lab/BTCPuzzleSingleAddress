@@ -1,12 +1,11 @@
 import os
 import hashlib
 import binascii
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from fastecdsa import keys, curve
-import sys
 
 # Укажите свои адреса вместо предполагаемых значений
-CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
+CUSTOM_ADDRESSES = {"13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"}
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
@@ -48,38 +47,27 @@ def public_key_to_address(public_key):
 
 def process(private_key, public_key, address, custom_addresses):
     """Check if the address is in the custom addresses list."""
-    print(f'Generated Bitcoin Address: {address}')
-    print(f'Corresponding Private Key: {private_key}\n')
-    sys.stdout.flush()  # Немедленный вывод буферизированного вывода
-
     if address in custom_addresses:
+        print(f'\nGenerated Bitcoin Address: {address}')
+        print(f'Corresponding Private Key: {private_key}')
         print('This address is in the custom addresses list!\n')
-        sys.stdout.flush()  # Немедленный вывод буферизированного вывода
 
-def main(custom_addresses):
-    """Main pipeline using multiprocessing."""
-    try:
-        while True:
-            private_key = generate_private_key()  # 66 bits
-            if private_key is None:
-                continue
-
+def generate_and_process_keys(custom_addresses, total_keys):
+    for _ in range(total_keys):
+        private_key = generate_private_key()  # 66 bits
+        if private_key is not None:
             public_key = private_key_to_public_key(private_key)
             address = public_key_to_address(public_key)
             if address != -1:
                 process(private_key, public_key, address, custom_addresses)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.stdout.flush()
 
 if __name__ == '__main__':
     custom_addresses = set(CUSTOM_ADDRESSES)
+    total_keys = 1000000  # Установите количество ключей по вашему выбору
+    processes = os.cpu_count()
 
-    processes = []
-    for cpu in range(multiprocessing.cpu_count()):
-        p = multiprocessing.Process(target=main, args=(custom_addresses,))
-        p.start()
-        processes.append(p)
+    with ProcessPoolExecutor(max_workers=processes) as executor:
+        futures = [executor.submit(generate_and_process_keys, custom_addresses, total_keys // processes) for _ in range(processes)]
 
-    for p in processes:
-        p.join()
+        for future in as_completed(futures):
+            future.result()
