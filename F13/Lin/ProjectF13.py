@@ -9,7 +9,7 @@ CUSTOM_ADDRESSES = ["address1", "address2", "address3"]
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
-    return binascii.hexlify(os.urandom(8)).decode('utf-8').upper()
+    return binascii.hexlify(os.urandom(8)).decode('utf-8')[:11].upper()
 
 def private_key_to_public_key(private_key):
     """Convert hex private key to its respective compressed public key."""
@@ -46,7 +46,7 @@ def process(private_key, public_key, address, custom_addresses):
 def main(custom_addresses):
     """Main pipeline using multiprocessing."""
     while True:
-        private_key = generate_private_key()[:16]  # 66 bits
+        private_key = generate_private_key()  # 66 bits
         public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
         if address != -1:
