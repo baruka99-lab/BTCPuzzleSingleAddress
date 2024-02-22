@@ -1,13 +1,16 @@
 import os
 import hashlib
 import binascii
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastecdsa import keys, curve
 import sys
-import multiprocessing
+import threading
 
 # Укажите свои адреса вместо предполагаемых значений
 CUSTOM_ADDRESSES = {"13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"}
+
+# Блокировка для синхронизации вывода
+print_lock = threading.Lock()
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
@@ -47,28 +50,28 @@ def public_key_to_address(public_key):
     except:
         return -1
 
-def process(private_key, public_key, address, custom_addresses):
+def process(private_key, public_key, address, custom_addresses, process_id):
     """Check if the address is in the custom addresses list."""
-    if address in custom_addresses:
-        print(f'Generated Bitcoin Address: {address}')
-        print(f'Corresponding Private Key: {private_key}\n')
+    with print_lock:
+        print(f'Process {process_id}: Generated Bitcoin Address: {address}')
+        print(f'Process {process_id}: Corresponding Private Key: {private_key}\n')
 
 def generate_and_process_keys(custom_addresses, process_id, total_keys):
-    print(f"Starting process {process_id}")
+    print(f"Process {process_id} starting")
     for _ in range(total_keys):
         private_key = generate_private_key()  # 66 bits
         if private_key is not None:
             public_key = private_key_to_public_key(private_key)
             address = public_key_to_address(public_key)
             if address != -1:
-                process(private_key, public_key, address, custom_addresses)
+                process(private_key, public_key, address, custom_addresses, process_id)
     print(f"Process {process_id} finished")
 
 if __name__ == '__main__':
     custom_addresses = set(CUSTOM_ADDRESSES)
     processes = os.cpu_count()
 
-    with ProcessPoolExecutor(max_workers=processes) as executor:
+    with ThreadPoolExecutor(max_workers=processes) as executor:
         futures = [executor.submit(generate_and_process_keys, custom_addresses, i, total_keys=10) for i in range(processes)]
 
         for future in as_completed(futures):
