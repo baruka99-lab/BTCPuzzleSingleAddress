@@ -2,10 +2,15 @@ import os
 import hashlib
 import binascii
 import multiprocessing
+import logging
 from fastecdsa import keys, curve
 
 # Укажите свои адреса вместо предполагаемых значений
 CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
+
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def generate_private_key():
     """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
@@ -47,10 +52,10 @@ def public_key_to_address(public_key):
 
 def process(private_key, public_key, address, custom_addresses):
     """Check if the address is in the custom addresses list."""
-    print(f'Generated Bitcoin Address: {address}')
-    print(f'Corresponding Private Key: {private_key}\n')
+    logger.info(f'Generated Bitcoin Address: {address}')
+    logger.info(f'Corresponding Private Key: {private_key}\n')
     if address in custom_addresses:
-        print('This address is in the custom addresses list!\n')
+        logger.info('This address is in the custom addresses list!\n')
 
 def main(custom_addresses):
     """Main pipeline using multiprocessing."""
