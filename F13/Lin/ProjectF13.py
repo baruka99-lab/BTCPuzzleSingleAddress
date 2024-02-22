@@ -3,6 +3,7 @@ import hashlib
 import binascii
 import multiprocessing
 from fastecdsa import keys, curve
+import sys
 
 # Укажите свои адреса вместо предполагаемых значений
 CUSTOM_ADDRESSES = ["13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"]
@@ -32,7 +33,7 @@ def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
     try:
-        var.update(hashlib.sha256(binascii.unhexlify(public_key)).digest())
+        var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
         var = '00' + var.hexdigest() + hashlib.sha256(
             hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()[0:8]
         count = [char != '0' for char in var].index(True) // 2
@@ -45,17 +46,17 @@ def public_key_to_address(public_key):
     except:
         return -1
 
-def process(private_key, public_key, address, custom_addresses, output_queue):
+def process(private_key, public_key, address, custom_addresses):
     """Check if the address is in the custom addresses list."""
-    result = {
-        'private_key': private_key,
-        'public_key': public_key,
-        'address': address,
-        'in_custom_addresses': address in custom_addresses
-    }
-    output_queue.put(result)
+    print(f'Generated Bitcoin Address: {address}')
+    print(f'Corresponding Private Key: {private_key}\n')
+    sys.stdout.flush()  # Немедленный вывод буферизированного вывода
 
-def main(custom_addresses, output_queue):
+    if address in custom_addresses:
+        print('This address is in the custom addresses list!\n')
+        sys.stdout.flush()  # Немедленный вывод буферизированного вывода
+
+def main(custom_addresses):
     """Main pipeline using multiprocessing."""
     while True:
         private_key = generate_private_key()  # 66 bits
@@ -65,20 +66,10 @@ def main(custom_addresses, output_queue):
         public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
         if address != -1:
-            process(private_key, public_key, address, custom_addresses, output_queue)
+            process(private_key, public_key, address, custom_addresses)
 
 if __name__ == '__main__':
     custom_addresses = set(CUSTOM_ADDRESSES)
-    output_queue = multiprocessing.Queue()
 
     for cpu in range(multiprocessing.cpu_count()):
-        multiprocessing.Process(target=main, args=(custom_addresses, output_queue)).start()
-
-    while True:
-        result = output_queue.get()
-        print(f'Generated Bitcoin Address: {result["address"]}')
-        print(f'Corresponding Private Key: {result["private_key"]}')
-        if result['in_custom_addresses']:
-            print('This address is in the custom addresses list!\n')
-        else:
-            print('\n')
+        multiprocessing.Process(target=main, args=(custom_addresses,)).start()
