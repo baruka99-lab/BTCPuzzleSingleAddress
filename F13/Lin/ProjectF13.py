@@ -5,12 +5,16 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 import secrets
 
-def generate_key_pair(private_key):
+def generate_key_pair(private_key, compressed=True):
     curve = ecdsa.SECP256k1
     base_point = curve.generator
     base_private_key_point = base_point * private_key
 
-    base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
+    if compressed:
+        base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
+    else:
+        base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("uncompressed")
+
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
 
     ripemd160_hash = sha256_hash[:20]
@@ -26,7 +30,7 @@ def generate_and_check_target(args):
         # Генерация случайного числа с битовой длиной 25
         current_private_key = secrets.randbits(25)
         current_private_key_hex = hex(current_private_key)[2:]  # Преобразование в шестнадцатеричный формат
-        current_private_key, current_address = generate_key_pair(current_private_key)
+        current_private_key, current_address = generate_key_pair(current_private_key, compressed=False)  # Несжатые публичные ключи
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
