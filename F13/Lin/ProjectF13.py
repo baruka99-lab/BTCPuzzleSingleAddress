@@ -25,19 +25,20 @@ def generate_and_check_target(args):
     for _ in range(start, end):
         # Генерация случайного числа с битовой длиной 25
         current_private_key = secrets.randbits(25)
+        current_private_key_hex = hex(current_private_key)[2:]  # Преобразование в шестнадцатеричный формат
         current_private_key, current_address = generate_key_pair(current_private_key)
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
-            print(f"Приватный ключ для целевого адреса: {bin(current_private_key)[2:]}")
+            print(f"Приватный ключ для целевого адреса: {current_private_key_hex}")
 
             with open("F13.txt", "a") as file:
                 file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {bin(current_private_key)[2:]}\n")
+                file.write(f"Приватный ключ: {current_private_key_hex}\n")
 
             return True
 
-        print(f"Private Key: {bin(current_private_key)[2:]} | Address: {current_address}")
+        print(f"Private Key: {current_private_key_hex} | Address: {current_address}")
 
     return False
 
