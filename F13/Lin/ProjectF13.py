@@ -21,15 +21,13 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(target_address, stop_flag, output_file):
+def generate_and_check_target(args):
+    target_address, stop_flag, output_file = args
     try:
         while not stop_flag.is_set():
             # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
             private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
-
-            # print(f"Iсходный приватный ключ: {format(current_private_key, 'x')}")
-            # print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -51,11 +49,10 @@ if __name__ == "__main__":
     output_file = "F13.txt"
 
     num_cpus = multiprocessing.cpu_count()
-    with ProcessPoolExecutor(max_workers=num_cpus) as process_executor:
-        stop_flag = process_executor._manager.Event()
-        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(num_cpus)]
+    stop_flag = multiprocessing.Event()
+    args = [(target_address, stop_flag, output_file) for _ in range(num_cpus)]
 
-        for future in futures:
-            future.result()
+    with ProcessPoolExecutor(max_workers=num_cpus) as process_executor:
+        futures = process_executor.map(generate_and_check_target, args)
 
     print("Программа завершена.")
