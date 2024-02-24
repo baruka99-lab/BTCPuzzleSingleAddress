@@ -1,6 +1,6 @@
 import hashlib
 import base58
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing import cpu_count
 from fastecdsa import keys, curve
 
@@ -19,13 +19,9 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 
     return private_key, address
 
-def generate_and_check_target(target_address, output_file, start, end):
-    for private_key in range(start, end):
+def generate_and_check_target(private_key_range, target_address, output_file):
+    for private_key in private_key_range:
         current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
-        current_private_key_point = keys.get_public_key(current_private_key, curve=curve.secp256k1)
-
-        print(f"Приватный ключ: {hex(int(current_private_key))[2:]}")
-        print(f"Биткоин-адрес: {current_address}\n")
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -37,26 +33,27 @@ def generate_and_check_target(target_address, output_file, start, end):
 
             return
 
-if __name__ == "__main__":
+def main():
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
-    num_processes = cpu_count()
+    num_threads = cpu_count()
 
     # Устанавливаем новый диапазон
     start = (1 << 65) + 1
     end = (1 << 66)
 
-    with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
+    with ThreadPoolExecutor(max_workers=num_threads) as thread_executor:
         futures = []
 
-        # Разбиваем диапазон приватных ключей между процессами
-        chunk_size = (end - start) // num_processes
-        for i in range(num_processes):
+        # Разбиваем диапазон приватных ключей между потоками
+        chunk_size = (end - start) // num_threads
+        for i in range(num_threads):
             chunk_start = start + i * chunk_size
-            chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
-            futures.append(process_executor.submit(generate_and_check_target, target_address, output_file, chunk_start, chunk_end))
+            chunk_end = start + (i + 1) * chunk_size if i != num_threads - 1 else end
+            private_key_range = range(chunk_start, chunk_end)
+            futures.append(thread_executor.submit(generate_and_check_target, private_key_range, target_address, output_file))
 
-        # Ждем завершения всех процессов
+        # Ждем завершения всех потоков
         for future in as_completed(futures):
             try:
                 future.result()
@@ -64,3 +61,6 @@ if __name__ == "__main__":
                 print(f"Произошла ошибка: {e}")
 
     print("Программа завершена.")
+
+if __name__ == "__main__":
+    main()
