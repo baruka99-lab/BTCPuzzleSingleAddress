@@ -22,8 +22,7 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 def generate_and_check_target(private_key_range, target_address, output_file):
     for private_key in private_key_range:
         current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
-        current_private_key_point, _ = generate_key_pair(current_private_key, curve=curve.secp256k1)
-        current_address = keys.get_address(current_private_key_point, curve=curve.secp256k1)
+        current_private_key_point = keys.get_public_key(private_key, curve=curve.secp256k1)  # Получаем соответствующую точку
 
         print(f"Приватный ключ: {hex(current_private_key)[2:]}")
         print(f"Биткоин-адрес: {current_address}\n")
