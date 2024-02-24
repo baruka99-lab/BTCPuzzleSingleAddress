@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 from multiprocessing import cpu_count
 from fastecdsa import keys, curve
 import threading
-import os
 
 def generate_key_pair(private_key, curve=curve.secp256k1):
     base_point = curve.G
@@ -21,16 +20,21 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 
     return private_key, address
 
-def generate_and_check_target(private_key_range, target_address, output_file):
+def generate_and_check_target(private_key_range, target_address, output_file, lock):
     for private_key in private_key_range:
         current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
         current_private_key_point, _ = generate_key_pair(current_private_key, curve=curve.secp256k1)
         current_address = keys.get_address(current_private_key_point, curve=curve.secp256k1)
 
+        with lock:
+            print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+            print(f"Биткоин-адрес: {current_address}\n")
+
         if current_address == target_address:
-            with open(output_file, "a") as file:
-                file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+            with lock:
+                with open(output_file, "a") as file:
+                    file.write(f"Целевой биткоин-адрес: {target_address}\n")
+                    file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
             return
 
 def main():
@@ -43,6 +47,8 @@ def main():
     start = (1 << 65) + 1
     end = (1 << 66)
 
+    lock = threading.Lock()
+
     with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
         futures = []
 
@@ -52,7 +58,7 @@ def main():
             chunk_start = start + i * chunk_size
             chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
             private_key_range = range(chunk_start, chunk_end)
-            futures.append(process_executor.submit(generate_and_check_target, private_key_range, target_address, output_file))
+            futures.append(process_executor.submit(generate_and_check_target, private_key_range, target_address, output_file, lock))
 
         # Ждем завершения всех процессов
         for future in as_completed(futures):
