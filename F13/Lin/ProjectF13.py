@@ -17,11 +17,12 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
-    return private_key, address
+    return private_key
 
 def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
-        current_private_key, current_address = generate_key_pair(private_key)
+        current_private_key = generate_key_pair(private_key)
+        current_address = keys.get_address(current_private_key, curve=curve.secp256k1)
 
         print(f"Приватный ключ: {hex(current_private_key)[2:]}")
         print(f"Биткоин-адрес: {current_address}\n")
