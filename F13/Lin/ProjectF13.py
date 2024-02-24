@@ -1,8 +1,7 @@
 from Crypto.Random import get_random_bytes
 from ecdsa import SigningKey, SECP256k1
-import hashlib
+from bitcoinaddress import Wallet
 from multiprocessing import Pool, cpu_count
-from bitcoinlib.wallets import P2PKH
 
 def generate_custom_address_parallel(args):
     target_address, process_id = args
@@ -14,7 +13,7 @@ def generate_custom_address_parallel(args):
         private_key_obj = SigningKey.from_secret_exponent(int.from_bytes(private_key_bytes, 'big'), curve=SECP256k1)
         
         # Генерируем биткоин-адрес
-        bitcoin_address = P2PKH(secret=private_key_obj.to_string()).address()
+        bitcoin_address = Wallet(private_key_obj.to_string().hex()).to_address()
 
         print("Процесс {}: Итерация {}: Генерация приватного ключа: {}".format(process_id, count, private_key_obj.to_string().hex()))
         print("Процесс {}: Биткоин-адрес: {}".format(process_id, bitcoin_address))
