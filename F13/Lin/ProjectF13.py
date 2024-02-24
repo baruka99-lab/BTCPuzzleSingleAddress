@@ -14,8 +14,8 @@ def generate_key_pair(private_key):
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
 
-    # Use hashlib directly for ripemd160
-    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+    # Use first 20 bytes (160 bits) for ripemd160
+    ripemd160_hash = sha256_hash[:20]
 
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
