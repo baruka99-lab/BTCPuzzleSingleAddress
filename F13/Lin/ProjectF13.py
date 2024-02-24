@@ -3,6 +3,7 @@ import hashlib
 import base58
 import secrets
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -24,6 +25,10 @@ def generate_and_check_target(target_address, stop_flag, output_file):
             private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
 
+            # Вернуть вывод в консоль
+            print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
+            print(f"Iсходный биткоин-адрес: {current_address}\n")
+
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
                 print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
@@ -43,7 +48,7 @@ if __name__ == "__main__":
     output_file = "F13.txt"
 
     with ThreadPoolExecutor() as thread_executor:
-        stop_flag = thread_executor._threads[0].stop_request
+        stop_flag = threading.Event()
         futures = [thread_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(thread_executor._max_workers)]
 
         for future in as_completed(futures):
