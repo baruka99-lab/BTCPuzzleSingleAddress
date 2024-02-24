@@ -2,13 +2,14 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-from ecdsa import SigningKey, SECP256k1
+from fastecdsa import ecdsa, keys, curve, point
 
 def generate_key_pair(private_key):
-    sk = SigningKey.from_secret_exponent(private_key, curve=SECP256k1)
-    vk = sk.get_verifying_key()
+    base_point = curve.secp256k1.G
+    base_private_key_point = point.Multiply(base_point, private_key, curve=curve.secp256k1)
 
-    base_public_key_bytes = vk.to_string("compressed")
+    base_public_key = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve=curve.secp256k1)
+    base_public_key_bytes = base_public_key.to_string("compressed")
 
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
     ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
@@ -22,6 +23,9 @@ def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
         current_private_key, current_address = generate_key_pair(private_key)
 
+        print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+        print(f"Биткоин-адрес: {current_address}\n")
+
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
             print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
@@ -33,13 +37,13 @@ def generate_and_check_target(target_address, output_file, start, end):
             return
 
 if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
     output_file = "F13.txt"
     num_processes = cpu_count()
 
     # Устанавливаем новый диапазон
-    start = (1 << 65) + 1
-    end = (1 << 66)
+    start = (1 << 24) + 1
+    end = (1 << 25)
 
     with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
         futures = []
