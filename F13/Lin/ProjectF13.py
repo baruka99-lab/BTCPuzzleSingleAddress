@@ -8,8 +8,8 @@ def generate_key_pair(private_key):
     base_point = curve.secp256k1.G
     base_private_key_point = point.Multiply(base_point, private_key, curve=curve.secp256k1)
 
-    base_public_key = ecdsa.PublicKey(point=base_private_key_point, curve=curve.secp256k1)
-    base_public_key_bytes = base_public_key.to_bytes()
+    base_public_key = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve=curve.secp256k1)
+    base_public_key_bytes = base_public_key.to_string("compressed")
 
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
     ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
