@@ -2,14 +2,13 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-from fastecdsa import ecdsa, keys, curve, point
+from ecdsa import SigningKey, SECP256k1
 
 def generate_key_pair(private_key):
-    base_point = curve.secp256k1.G
-    base_private_key_point = point.Multiply(base_point, private_key, curve=curve.secp256k1)
+    sk = SigningKey.from_secret_exponent(private_key, curve=SECP256k1)
+    vk = sk.get_verifying_key()
 
-    base_public_key = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve=curve.secp256k1)
-    base_public_key_bytes = base_public_key.to_string("compressed")
+    base_public_key_bytes = vk.to_string("compressed")
 
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
     ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
