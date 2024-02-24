@@ -19,20 +19,19 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(args):
-    target_address, start, end = args
-    for private_key in range(start, end):
-        current_private_key, current_address = generate_key_pair(private_key)
+def generate_and_check_target(private_key):
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+    current_private_key, current_address = generate_key_pair(private_key)
 
-        if current_address == target_address:
-            print(f"Найден целевой биткоин-адрес: {target_address}")
-            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+    if current_address == target_address:
+        print(f"Найден целевой биткоин-адрес: {target_address}")
+        print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
 
-            with open("F13.txt", "a") as file:
-                file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+        with open("F13.txt", "a") as file:
+            file.write(f"Целевой биткоин-адрес: {target_address}\n")
+            file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-            return True
+        return True
 
     return False
 
@@ -41,19 +40,20 @@ if __name__ == "__main__":
     output_file = "F13.txt"
     num_processes = cpu_count()
 
-    pool = Pool(num_processes)
-    chunk_size = 2**24  # Adjust the chunk size based on your system's capabilities
+    with Pool(num_processes) as pool:
+        try:
+            private_key_start = 1 << 24
+            private_key_end = 1 << 66
 
-    start_values = range(1 << 24, 1 << 25, chunk_size)
-    end_values = [start + chunk_size for start in start_values]
+            # Generate a pool of private keys
+            private_keys = range(private_key_start, private_key_end)
 
-    args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
+            # Distribute tasks to the pool
+            result = pool.map(generate_and_check_target, private_keys)
 
-    try:
-        result = pool.map(generate_and_check_target, args_list)
-        if any(result):
+            if any(result):
+                print("Программа завершена.")
+        except KeyboardInterrupt:
+            pool.terminate()
+            pool.join()
             print("Программа завершена.")
-    except KeyboardInterrupt:
-        pool.terminate()
-        pool.join()
-        print("Программа завершена.")
