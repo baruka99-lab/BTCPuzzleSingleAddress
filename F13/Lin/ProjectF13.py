@@ -20,16 +20,16 @@ def generate_key_pair(private_key):
 def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
         current_private_key, current_address = generate_key_pair(private_key)
-        print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+        print(f"Приватный ключ: {hex(current_private_key)[2:].rjust(64, '0')}")
         print(f"Биткоин-адрес: {current_address}\n")
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
-            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:].rjust(64, '0')}")
 
             with open(output_file, "a") as file:
                 file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+                file.write(f"Приватный ключ: {hex(current_private_key)[2:].rjust(64, '0')}\n")
 
             return
 
