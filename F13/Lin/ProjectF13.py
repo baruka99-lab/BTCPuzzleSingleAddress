@@ -1,7 +1,7 @@
 print("Start")
 
 import ecdsa
-import hashlib
+from Crypto.Hash import RIPEMD160
 import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
@@ -18,13 +18,17 @@ def generate_key_pair(process_id):
         compressed_public_key = private_key.get_verifying_key().to_string("compressed")
 
         # Хеширование публичного ключа для получения отпечатка
-        public_key_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
+        h = RIPEMD160.new()
+        h.update(hashlib.sha256(compressed_public_key).digest())
+        public_key_hash = h.digest()
 
         # Добавление префикса к хешу (для биткоин-адреса)
         prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
 
         # Вычисление контрольной суммы
-        checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
+        h = hashlib.sha256()
+        h.update(hashlib.sha256(prefixed_public_key_hash).digest())
+        checksum = h.digest()[:4]
 
         # Формирование биткоин-адреса в base58check
         bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
