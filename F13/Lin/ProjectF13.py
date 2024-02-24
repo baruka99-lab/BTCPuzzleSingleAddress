@@ -1,4 +1,4 @@
-print(""Start)
+print("Start")
 
 import ecdsa
 import hashlib
@@ -34,11 +34,11 @@ def generate_key_pair(process_id):
         print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
         # Проверка и запись в файл found.txt или address.txt
-        if check_and_write_address(bitcoin_address, private_key):
+        if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
             # Прерывание цикла, если найден нужный адрес
             break
 
-def check_and_write_address(bitcoin_address, private_key):
+def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
     # Проверка наличия определенного адреса
     target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
     if bitcoin_address == target_address:
