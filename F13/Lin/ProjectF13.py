@@ -19,8 +19,6 @@ def generate_custom_address_parallel(args):
         public_key = private_key_obj.get_verifying_key().to_string()
         address_compressed = hashlib.new('ripemd160', hashlib.sha256(public_key).digest()).hexdigest()
 
-        print("Process {}: Iteration {}: Generating private key: {}".format(process_id, count, private_key_obj.to_string().hex()))
-
         if address_compressed == target_address:
             print("\nProcess {}: Match found after {} iterations.".format(process_id, count))
             print("Custom Bitcoin address:", address_compressed)
@@ -34,7 +32,8 @@ def generate_custom_address_parallel(args):
             print("Information written to file found13.txt.")
             return address_compressed, private_key_obj.to_string().hex()
 
-def generate_custom_address_with_multiprocessing(target_address):
+if __name__ == "__main__":
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     processes = cpu_count()  # Get the number of CPU cores
     pool = Pool(processes=processes)
     args_list = [(target_address, i) for i in range(processes)]
@@ -45,8 +44,4 @@ def generate_custom_address_with_multiprocessing(target_address):
 
     for result in results:
         if result:
-            return result
-
-if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
-    generate_custom_address_with_multiprocessing(target_address)
+            break
