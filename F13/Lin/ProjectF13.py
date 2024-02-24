@@ -9,7 +9,7 @@ import secrets
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(2**25 - 2**24) + 2**24
+        secret_exponent = secrets.randbelow(2**66 - 2**65) + 2**65
 
         # Преобразование случайного числа в приватный ключ
         private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
@@ -33,9 +33,9 @@ def generate_key_pair(process_id):
         # Формирование биткоин-адреса в base58check
         bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+        #print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        #print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
         # Проверка и запись в файл found.txt или address.txt
         if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
@@ -44,7 +44,7 @@ def generate_key_pair(process_id):
 
 def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
     # Проверка наличия определенного адреса
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
         with open('F13.txt', 'a') as found_file:
