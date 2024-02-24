@@ -5,16 +5,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 import secrets
 
-def generate_key_pair(private_key, compressed=True):
+def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
     base_point = curve.generator
     base_private_key_point = base_point * private_key
 
-    if compressed:
-        base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    else:
-        base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("uncompressed")
-
+    # Используем сжатые публичные ключи
+    base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
 
     ripemd160_hash = sha256_hash[:20]
@@ -26,11 +23,10 @@ def generate_key_pair(private_key, compressed=True):
 
 def generate_and_check_target(args):
     target_address, start, end = args
-    for _ in range(start, end):
-        # Генерация случайного числа с битовой длиной 25
-        current_private_key = secrets.randbits(25)
-        current_private_key_hex = hex(current_private_key)[2:]  # Преобразование в шестнадцатеричный формат
-        current_private_key, current_address = generate_key_pair(current_private_key, compressed=False)  # Несжатые публичные ключи
+    for current_private_key in range(start, end):
+        # Генерация приватного ключа в указанном диапазоне
+        current_private_key_hex = hex(current_private_key)[2:].zfill(50)  # Преобразование в шестнадцатеричный формат и заполнение нулями
+        current_private_key, current_address = generate_key_pair(current_private_key)
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -53,8 +49,8 @@ if __name__ == "__main__":
 
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
         chunk_size = 2**24
-        start_values = [0]
-        end_values = [1 << 25]
+        start_values = [(1 << 24)]  # Начальное значение в указанном диапазоне
+        end_values = [(1 << 25 - 1) + (1 << 24)]  # Конечное значение в указанном диапазоне
         args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
 
         try:
