@@ -3,7 +3,7 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-import secrets  # Импортируем модуль secrets для генерации случайных чисел
+import secrets
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -22,8 +22,8 @@ def generate_key_pair(private_key):
 
 def generate_and_check_target(args):
     target_address, start, end = args
-    for _ in range(start, end):  # Нам нужен случайный приватный ключ, поэтому не используем переменную private_key
-        current_private_key = secrets.randbelow(ecdsa.SECP256k1.order)  # Генерируем случайный приватный ключ
+    for _ in range(start, end):
+        current_private_key = secrets.randbelow(ecdsa.SECP256k1.order)
         current_private_key, current_address = generate_key_pair(current_private_key)
 
         if current_address == target_address:
@@ -46,9 +46,9 @@ if __name__ == "__main__":
     num_processes = cpu_count()
 
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        chunk_size = 2**24  # Adjust the chunk size based on your system's capabilities
-        start_values = range(1 << 24, 1 << 25, chunk_size)
-        end_values = [start + chunk_size for start in start_values]
+        chunk_size = 2**24
+        start_values = [0]  # Изменено начальное значение для охвата всего диапазона
+        end_values = [1 << 25]
         args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
 
         try:
