@@ -2,13 +2,13 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-from fastecdsa import keys, curve
+from fastecdsa import keys, curve, point
 
 def generate_key_pair(private_key):
     base_point = curve.secp256k1.G
-    base_private_key_point = base_point * private_key
+    base_private_key_point = point.Multiply(curve.secp256k1.G, private_key)
 
-    base_public_key_bytes = keys.get_public_key(base_private_key_point, curve=curve.secp256k1, compressed=True)
+    base_public_key_bytes = keys.get_public_key(base_private_key_point, curve=curve.secp256k1)
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
     ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
     network_byte = b"\x00"
