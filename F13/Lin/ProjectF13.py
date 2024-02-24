@@ -28,8 +28,8 @@ def generate_and_check_target(target_address, stop_flag, output_file):
             private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
 
-            #print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
-            #print(f"Iсходный биткоин-адрес: {current_address}\n")
+            print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
+            print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
