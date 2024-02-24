@@ -3,6 +3,7 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
+import secrets  # Импортируем модуль secrets для генерации случайных чисел
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -21,8 +22,9 @@ def generate_key_pair(private_key):
 
 def generate_and_check_target(args):
     target_address, start, end = args
-    for private_key in range(start, end):
-        current_private_key, current_address = generate_key_pair(private_key)
+    for _ in range(start, end):  # Нам нужен случайный приватный ключ, поэтому не используем переменную private_key
+        current_private_key = secrets.randbelow(ecdsa.SECP256k1.order)  # Генерируем случайный приватный ключ
+        current_private_key, current_address = generate_key_pair(current_private_key)
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -56,5 +58,4 @@ if __name__ == "__main__":
                     print("Программа завершена.")
                     break
         except KeyboardInterrupt:
-            executor.shutdown()
             print("Программа завершена.")
