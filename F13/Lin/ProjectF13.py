@@ -1,3 +1,5 @@
+print(""Start)
+
 import ecdsa
 import hashlib
 import base58check
@@ -41,10 +43,9 @@ def check_and_write_address(bitcoin_address, private_key):
     target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
-        with open('found.txt', 'a') as found_file:
+        with open('F13.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
             found_file.write(f"Private Key: {private_key.to_string().hex()}\n")
-        print("Target Address Found!")
         print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
         print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
         print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
