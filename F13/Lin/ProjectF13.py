@@ -1,63 +1,52 @@
-import ecdsa
+from Crypto.Random import get_random_bytes
+from ecdsa import SigningKey, SECP256k1
 import hashlib
-import base58
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import cpu_count
-import secrets
+from multiprocessing import Pool, cpu_count
 
-def generate_key_pair(private_key):
-    curve = ecdsa.SECP256k1
-    base_point = curve.generator
-    base_private_key_point = base_point * private_key
+def generate_custom_address_parallel(args):
+    target_address, process_id = args
+    count = 0
 
-    # Используем сжатые публичные ключи
-    base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
+    while True:
+        count += 1
+        private_key_bytes = get_random_bytes(9)
+        private_key = int.from_bytes(private_key_bytes, 'big')
 
-    ripemd160_hash = sha256_hash[:20]
-    network_byte = b"\x00"
-    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
-    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
+        if private_key.bit_length() > 66:
+            private_key >>= (private_key.bit_length() - 66)
 
-    return private_key, address
+        private_key_obj = SigningKey.from_secret_exponent(private_key, curve=SECP256k1)
+        public_key = private_key_obj.get_verifying_key().to_string()
+        address_compressed = hashlib.new('ripemd160', hashlib.sha256(public_key).digest()).hexdigest()
 
-def generate_and_check_target(args):
-    target_address, start, end = args
-    for current_private_key in range(start, end):
-        # Генерация приватного ключа в указанном диапазоне
-        current_private_key_hex = hex(current_private_key)[2:].zfill(50)  # Преобразование в шестнадцатеричный формат и заполнение нулями
-        current_private_key, current_address = generate_key_pair(current_private_key)
+        print("Process {}: Iteration {}: Generating private key: {}".format(process_id, count, private_key_obj.to_string().hex()))
 
-        if current_address == target_address:
-            print(f"Найден целевой биткоин-адрес: {target_address}")
-            print(f"Приватный ключ для целевого адреса: {current_private_key_hex}")
+        if address_compressed == target_address:
+            print("\nProcess {}: Match found after {} iterations.".format(process_id, count))
+            print("Custom Bitcoin address:", address_compressed)
+            print("Private key:", private_key_obj.to_string().hex())
 
-            with open("F13.txt", "a") as file:
-                file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {current_private_key_hex}\n")
+            # Write to the file found13.txt
+            with open('found13.txt', 'w') as file:
+                file.write("Bitcoin Address: {}\n".format(address_compressed))
+                file.write("Private Key: {}\n".format(private_key_obj.to_string().hex()))
 
-            return True
+            print("Information written to file found13.txt.")
+            return address_compressed, private_key_obj.to_string().hex()
 
-        print(f"Private Key: {current_private_key_hex} | Address: {current_address}")
+def generate_custom_address_with_multiprocessing(target_address):
+    processes = cpu_count()  # Get the number of CPU cores
+    pool = Pool(processes=processes)
+    args_list = [(target_address, i) for i in range(processes)]
 
-    return False
+    results = pool.map(generate_custom_address_parallel, args_list)
+    pool.close()
+    pool.join()
+
+    for result in results:
+        if result:
+            return result
 
 if __name__ == "__main__":
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
-    output_file = "F13.txt"
-    num_processes = cpu_count()
-
-    with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        chunk_size = 2**24
-        start_values = [(1 << 24)]  # Начальное значение в указанном диапазоне
-        end_values = [(1 << 25 - 1) + (1 << 24)]  # Конечное значение в указанном диапазоне
-        args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
-
-        try:
-            futures = [executor.submit(generate_and_check_target, args) for args in args_list]
-            for future in as_completed(futures):
-                if future.result():
-                    print("Программа завершена.")
-                    break
-        except KeyboardInterrupt:
-            print("Программа завершена.")
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
+    generate_custom_address_with_multiprocessing(target_address)
