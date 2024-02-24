@@ -5,7 +5,6 @@ import hashlib
 import base58
 import secrets
 from concurrent.futures import ProcessPoolExecutor
-from bitcoin.wallet import CBitcoinSecret
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -15,11 +14,12 @@ def generate_key_pair(private_key):
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
 
-    # Use python-bitcoinlib for ripemd160
-    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+    # Use ecdsa's hashlib_new for ripemd160
+    ripemd160_hash = ecdsa.util.hashlib_new("ripemd160", sha256_hash).digest()
 
-    secret = CBitcoinSecret.from_secret_bytes(ripemd160_hash)
-    address = secret.address()
+    network_byte = b"\x00"
+    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
+    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
     return private_key, address
 
