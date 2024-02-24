@@ -1,8 +1,10 @@
+print("Start Project13")
+
 import ecdsa
 import hashlib
 import base58
 import secrets
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager
 
 def generate_key_pair(private_key):
@@ -19,38 +21,40 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(target_address, stop_flag, output_file, iterations=100000):
+def generate_and_check_target(target_address, stop_flag, output_file):
     try:
-        for _ in range(iterations):
-            private_key = secrets.randbelow(1 << 25 - 1) + (1 << 24)
+        while not stop_flag.is_set():
+            # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
+            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
+
+            #print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
+            #print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
                 print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
                 stop_flag.set()
 
+                # Запись в файл
                 with open(output_file, "a") as file:
                     file.write(f"Целевой биткоин-адрес: {target_address}\n")
                     file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-                return  
+                break
 
     except KeyboardInterrupt:
-        print("Программа завершена вручную пользователем.")
-    except Exception as e:
-        print(f"Произошло исключение: {e}")
+        pass
 
 if __name__ == "__main__":
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
 
-    with Manager() as manager:
+    with ProcessPoolExecutor() as process_executor, Manager() as manager:
         stop_flag = manager.Event()
-        with ProcessPoolExecutor(max_workers=4) as process_executor:
-            futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
+        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
 
-            for future in as_completed(futures):
-                future.result()
+        for future in futures:
+            future.result()
 
     print("Программа завершена.")
