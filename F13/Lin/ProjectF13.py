@@ -5,7 +5,6 @@ import hashlib
 import base58
 import secrets
 from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import Manager
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -21,11 +20,11 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(target_address, stop_flag, output_file):
+def generate_and_check_target(target_address):
     try:
-        while not stop_flag.is_set():
+        while True:
             # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
-            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
+            private_key = secrets.randbelow(1 << 25 - 1) + (1 << 24)
             current_private_key, current_address = generate_key_pair(private_key)
 
             print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
@@ -34,27 +33,27 @@ def generate_and_check_target(target_address, stop_flag, output_file):
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
                 print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
-                stop_flag.set()
 
                 # Запись в файл
                 with open(output_file, "a") as file:
                     file.write(f"Целевой биткоин-адрес: {target_address}\n")
                     file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-                break
+                return True
 
     except KeyboardInterrupt:
-        pass
+        return False
 
 if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
     output_file = "F13.txt"
 
-    with ProcessPoolExecutor() as process_executor, Manager() as manager:
-        stop_flag = manager.Event()
-        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
+    with ProcessPoolExecutor() as process_executor:
+        futures = [process_executor.submit(generate_and_check_target, target_address) for _ in range(process_executor._max_workers)]
 
         for future in futures:
-            future.result()
+            if future.result():
+                # Target found, exit the loop
+                break
 
     print("Программа завершена.")
