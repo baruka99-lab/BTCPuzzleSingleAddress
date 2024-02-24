@@ -2,8 +2,7 @@ import ecdsa
 import hashlib
 import base58
 import secrets
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -47,9 +46,9 @@ if __name__ == "__main__":
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
 
-    with ThreadPoolExecutor() as thread_executor:
-        stop_flag = threading.Event()
-        futures = [thread_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(thread_executor._max_workers)]
+    with ProcessPoolExecutor() as process_executor:
+        stop_flag = process_executor._queue[0].event
+        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
 
         for future in as_completed(futures):
             future.result()
