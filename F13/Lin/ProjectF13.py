@@ -47,8 +47,8 @@ if __name__ == "__main__":
 
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
         chunk_size = 2**24
-        start_values = [0]  # Изменено начальное значение для охвата всего диапазона
-        end_values = [1 << 25]
+        start_values = [(1 << 24)]  # Изменено начальное значение
+        end_values = [(1 << 25 - 1) + (1 << 24)]  # Изменено конечное значение
         args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
 
         try:
