@@ -28,12 +28,12 @@ def generate_and_check_target(target_address, output_file):
             private_key = secrets.randbelow(1 << 25 - 1) + (1 << 24)
             current_private_key, current_address = generate_key_pair(private_key)
 
-            print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
-            print(f"Iсходный биткоин-адрес: {current_address}\n")
+            #print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
+            #print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
-                #print(f"Найден целевой биткоин-адрес: {target_address}")
-                #print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+                print(f"Найден целевой биткоин-адрес: {target_address}")
+                print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
 
                 # Запись в файл
                 with open(output_file, "a") as file:
