@@ -19,21 +19,25 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 
     return private_key, address
 
-def generate_and_check_target(private_key_range, target_address, output_file):
-    for private_key in private_key_range:
+def generate_and_check_target(target_address, output_file, start, end):
+    for private_key in range(start, end):
         current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
-        current_private_key_point = keys.get_public_key(private_key, curve=curve.secp256k1)  # Получаем соответствующую точку
+        current_private_key_point = keys.get_public_key(current_private_key, curve=curve.secp256k1)
 
-        print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+        print(f"Приватный ключ: {hex(int(current_private_key))[2:]}")
         print(f"Биткоин-адрес: {current_address}\n")
 
         if current_address == target_address:
+            print(f"Найден целевой биткоин-адрес: {target_address}")
+            print(f"Приватный ключ для целевого адреса: {hex(int(current_private_key))[2:]}")
+
             with open(output_file, "a") as file:
                 file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+                file.write(f"Приватный ключ: {hex(int(current_private_key))[2:]}\n")
+
             return
 
-def main():
+if __name__ == "__main__":
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
     num_processes = cpu_count()
@@ -50,8 +54,7 @@ def main():
         for i in range(num_processes):
             chunk_start = start + i * chunk_size
             chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
-            private_key_range = range(chunk_start, chunk_end)
-            futures.append(process_executor.submit(generate_and_check_target, private_key_range, target_address, output_file))
+            futures.append(process_executor.submit(generate_and_check_target, target_address, output_file, chunk_start, chunk_end))
 
         # Ждем завершения всех процессов
         for future in as_completed(futures):
@@ -61,6 +64,3 @@ def main():
                 print(f"Произошла ошибка: {e}")
 
     print("Программа завершена.")
-
-if __name__ == "__main__":
-    main()
