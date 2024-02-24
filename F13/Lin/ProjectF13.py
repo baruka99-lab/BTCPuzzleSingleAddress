@@ -34,7 +34,7 @@ def generate_and_check_target(target_address, stop_flag, output_file, iterations
                     file.write(f"Целевой биткоин-адрес: {target_address}\n")
                     file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-                break
+                return  
 
     except KeyboardInterrupt:
         print("Программа завершена вручную пользователем.")
