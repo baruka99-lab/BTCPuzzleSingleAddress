@@ -1,11 +1,11 @@
 import hashlib
 import base58
-import ecdsa
-from concurrent.futures import ProcessPoolExecutor
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
-def generate_key_pair(private_key, curve=ecdsa.SECP256k1):
-    sk = ecdsa.SigningKey.from_secret_exponent(private_key, curve=curve)
+def generate_key_pair(private_key):
+    sk = SigningKey.from_secret_exponent(private_key, curve=SECP256k1)
     vk = sk.get_verifying_key()
 
     public_key_bytes = vk.to_string()
@@ -17,10 +17,11 @@ def generate_key_pair(private_key, curve=ecdsa.SECP256k1):
 
     return private_key, address
 
-def generate_and_check_target(args):
-    target_address, output_file, start, end = args
+def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
         current_private_key, current_address = generate_key_pair(private_key)
+        print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+        print(f"Биткоин-адрес: {current_address}\n")
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -32,20 +33,30 @@ def generate_and_check_target(args):
 
             return
 
-def main():
+if __name__ == "__main__":
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
-    num_processes = multiprocessing.cpu_count()
+    num_processes = cpu_count()
 
     # Устанавливаем новый диапазон
     start = (1 << 65) + 1
     end = (1 << 66)
 
     with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
-        args_list = [(target_address, output_file, start + i, start + i + 1) for i in range(num_processes)]
-        process_executor.map(generate_and_check_target, args_list)
+        futures = []
+
+        # Разбиваем диапазон приватных ключей между процессами
+        chunk_size = (end - start) // num_processes
+        for i in range(num_processes):
+            chunk_start = start + i * chunk_size
+            chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
+            futures.append(process_executor.submit(generate_and_check_target, target_address, output_file, chunk_start, chunk_end))
+
+        # Ждем завершения всех процессов
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Произошла ошибка: {e}")
 
     print("Программа завершена.")
-
-if __name__ == "__main__":
-    main()
