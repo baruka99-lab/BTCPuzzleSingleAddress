@@ -19,15 +19,11 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(target_address, stop_flag, output_file):
+def generate_and_check_target(target_address, stop_flag, output_file, iterations=100000):
     try:
-        while not stop_flag.is_set():
+        for _ in range(iterations):
             private_key = secrets.randbelow(1 << 25 - 1) + (1 << 24)
             current_private_key, current_address = generate_key_pair(private_key)
-
-            # Вернуть вывод в консоль
-            #print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
-            #print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -49,7 +45,7 @@ if __name__ == "__main__":
 
     with Manager() as manager:
         stop_flag = manager.Event()
-        with ProcessPoolExecutor() as process_executor:
+        with ProcessPoolExecutor(max_workers=4) as process_executor:  # Уменьшено количество процессов
             futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
 
             for future in as_completed(futures):
