@@ -4,7 +4,7 @@ import ecdsa
 from Crypto.Util.number import long_to_bytes
 import base58
 import secrets
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 
 def generate_key_pair(private_key):
@@ -53,6 +53,12 @@ if __name__ == "__main__":
     args = [(target_address, stop_flag, output_file) for _ in range(num_cpus)]
 
     with ProcessPoolExecutor(max_workers=num_cpus) as process_executor:
-        futures = process_executor.map(generate_and_check_target, args)
+        futures = [process_executor.submit(generate_and_check_target, arg) for arg in args]
+
+        for completed_future in as_completed(futures):
+            try:
+                completed_future.result()
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
     print("Программа завершена.")
