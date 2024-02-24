@@ -25,8 +25,8 @@ def generate_and_check_target(args):
     target_address, stop_flag, output_file = args
     try:
         while not stop_flag.is_set():
-            # Generate a random 66-bit number in the range (2^65) to (2^66 - 1)
-            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
+            # Generate a random 25-bit number in the range (2^24) to (2^25 - 1)
+            private_key = secrets.randbelow(1 << 25)
             current_private_key, current_address = generate_key_pair(private_key)
 
             if current_address == target_address:
