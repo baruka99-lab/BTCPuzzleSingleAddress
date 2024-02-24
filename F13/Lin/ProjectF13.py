@@ -22,8 +22,8 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
         # Generate the key pair and get the correct private key value and address
-        current_private_key_point, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
-        current_address = keys.get_address(current_private_key_point, curve=curve.secp256k1)
+        current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
+        current_private_key_point = keys.get_public_key(current_private_key, curve=curve.secp256k1)
         current_address = keys.get_address(current_private_key_point, curve=curve.secp256k1)
 
         print(f"Приватный ключ: {hex(current_private_key)[2:]}")
