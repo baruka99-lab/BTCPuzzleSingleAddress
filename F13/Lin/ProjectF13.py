@@ -1,10 +1,8 @@
-print("start!")
-
 import ecdsa
 import hashlib
 import base58
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import cpu_count
+import secrets
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -20,47 +18,35 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(target_address, output_file, start, end):
-    for private_key in range(start, end):
-        current_private_key, current_address = generate_key_pair(private_key)
+def generate_and_check_target(target_address, stop_flag, output_file):
+    try:
+        while not stop_flag.is_set():
+            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
+            current_private_key, current_address = generate_key_pair(private_key)
 
-        print(f"Приватный ключ: {hex(current_private_key)[2:]}")
-        print(f"Биткоин-адрес: {current_address}\n")
+            if current_address == target_address:
+                print(f"Найден целевой биткоин-адрес: {target_address}")
+                print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+                stop_flag.set()
 
-        if current_address == target_address:
-            print(f"Найден целевой биткоин-адрес: {target_address}")
-            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+                with open(output_file, "a") as file:
+                    file.write(f"Целевой биткоин-адрес: {target_address}\n")
+                    file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-            with open(output_file, "a") as file:
-                file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+                break
 
-            return
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == "__main__":
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
-    num_processes = cpu_count()
 
-    # Устанавливаем новый диапазон
-    start = (1 << 65) + 1
-    end = (1 << 66)
+    with ThreadPoolExecutor() as thread_executor:
+        stop_flag = thread_executor._threads[0].stop_request
+        futures = [thread_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(thread_executor._max_workers)]
 
-    with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
-        futures = []
-
-        # Разбиваем диапазон приватных ключей между процессами
-        chunk_size = (end - start) // num_processes
-        for i in range(num_processes):
-            chunk_start = start + i * chunk_size
-            chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
-            futures.append(process_executor.submit(generate_and_check_target, target_address, output_file, chunk_start, chunk_end))
-
-        # Ждем завершения всех процессов
         for future in as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                print(f"Произошла ошибка: {e}")
+            future.result()
 
     print("Программа завершена.")
