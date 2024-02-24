@@ -17,10 +17,11 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
-    return private_key
+    return private_key  # Return the correct private key value
 
 def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
+        # Generate the key pair and get the correct private key value
         current_private_key = generate_key_pair(private_key, curve=curve.secp256k1)
         current_address = keys.get_address(current_private_key, curve=curve.secp256k1)
 
