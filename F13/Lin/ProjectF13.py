@@ -1,3 +1,9 @@
+import hashlib
+import base58
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
+from fastecdsa import ecdsa, keys, curve, point
+
 def generate_key_pair(private_key, curve=curve.secp256k1):
     base_point = curve.G
     base_private_key_point = base_point * private_key
