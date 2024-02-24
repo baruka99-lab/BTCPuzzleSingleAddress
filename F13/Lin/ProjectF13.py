@@ -2,7 +2,7 @@ import hashlib
 import base58
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-from fastecdsa import ecdsa, keys, curve, point
+from fastecdsa import ecdsa, keys, curve
 
 def generate_key_pair(private_key, curve=curve.secp256k1):
     base_point = curve.G
@@ -21,7 +21,7 @@ def generate_key_pair(private_key, curve=curve.secp256k1):
 
 def generate_and_check_target(target_address, output_file, start, end):
     for private_key in range(start, end):
-        current_private_key = generate_key_pair(private_key)
+        current_private_key = generate_key_pair(private_key, curve=curve.secp256k1)
         current_address = keys.get_address(current_private_key, curve=curve.secp256k1)
 
         print(f"Приватный ключ: {hex(current_private_key)[2:]}")
