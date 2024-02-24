@@ -1,27 +1,26 @@
 import hashlib
 import base58
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from multiprocessing import cpu_count
-from fastecdsa import keys, curve
+import ecdsa
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 
-def generate_key_pair(private_key, curve=curve.secp256k1):
-    base_point = curve.G
-    base_private_key_point = base_point * private_key
+def generate_key_pair(private_key, curve=ecdsa.SECP256k1):
+    sk = ecdsa.SigningKey.from_secret_exponent(private_key, curve=curve)
+    vk = sk.get_verifying_key()
 
-    base_public_key = keys.get_public_key(base_private_key_point, curve=curve)
-    base_public_key_bytes = base_public_key.to_bytes()
-
-    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
+    public_key_bytes = vk.to_string()
+    sha256_hash = hashlib.sha256(public_key_bytes).digest()
     ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
-    return int.from_bytes(bytes.fromhex(str(private_key)), byteorder='big'), address
+    return private_key, address
 
-def generate_and_check_target(private_key_range, target_address, output_file):
-    for private_key in private_key_range:
-        current_private_key, current_address = generate_key_pair(private_key, curve=curve.secp256k1)
+def generate_and_check_target(args):
+    target_address, output_file, start, end = args
+    for private_key in range(start, end):
+        current_private_key, current_address = generate_key_pair(private_key)
 
         if current_address == target_address:
             print(f"Найден целевой биткоин-адрес: {target_address}")
@@ -36,29 +35,15 @@ def generate_and_check_target(private_key_range, target_address, output_file):
 def main():
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
-    num_threads = cpu_count()
+    num_processes = multiprocessing.cpu_count()
 
     # Устанавливаем новый диапазон
     start = (1 << 65) + 1
     end = (1 << 66)
 
-    with ThreadPoolExecutor(max_workers=num_threads) as thread_executor:
-        futures = []
-
-        # Разбиваем диапазон приватных ключей между потоками
-        chunk_size = (end - start) // num_threads
-        for i in range(num_threads):
-            chunk_start = start + i * chunk_size
-            chunk_end = start + (i + 1) * chunk_size if i != num_threads - 1 else end
-            private_key_range = range(chunk_start, chunk_end)
-            futures.append(thread_executor.submit(generate_and_check_target, private_key_range, target_address, output_file))
-
-        # Ждем завершения всех потоков
-        for future in as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                print(f"Произошла ошибка: {e}")
+    with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
+        args_list = [(target_address, output_file, start + i, start + i + 1) for i in range(num_processes)]
+        process_executor.map(generate_and_check_target, args_list)
 
     print("Программа завершена.")
 
