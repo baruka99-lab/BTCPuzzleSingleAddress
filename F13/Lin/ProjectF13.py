@@ -34,7 +34,7 @@ def generate_and_check_target(args):
 
             return True
 
-        print(f"Private Key: {hex(private_key)[2:]} | Address: {current_address}")
+        print(f"Private Key: {hex(current_private_key)[2:]} | Address: {current_address}")
 
     return False
 
