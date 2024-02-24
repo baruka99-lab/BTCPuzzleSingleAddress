@@ -1,8 +1,8 @@
 import ecdsa
 import hashlib
 import base58
-import secrets
-from multiprocessing import Pool, cpu_count
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
@@ -19,22 +19,22 @@ def generate_key_pair(private_key):
 
     return private_key, address
 
-def generate_and_check_target(private_key):
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
-    current_private_key, current_address = generate_key_pair(private_key)
+def generate_and_check_target(args):
+    target_address, start, end = args
+    for private_key in range(start, end):
+        current_private_key, current_address = generate_key_pair(private_key)
 
-    print(f"Приватный ключ: {hex(current_private_key)[2:]}")
-    print(f"Биткоин-адрес: {current_address}\n")
+        if current_address == target_address:
+            print(f"Найден целевой биткоин-адрес: {target_address}")
+            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
 
-    if current_address == target_address:
-        print(f"Найден целевой биткоин-адрес: {target_address}")
-        print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
+            with open("F13.txt", "a") as file:
+                file.write(f"Целевой биткоин-адрес: {target_address}\n")
+                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-        with open("F13.txt", "a") as file:
-            file.write(f"Целевой биткоин-адрес: {target_address}\n")
-            file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
+            return True
 
-        return True
+        print(f"Private Key: {hex(private_key)[2:]} | Address: {current_address}")
 
     return False
 
@@ -43,20 +43,18 @@ if __name__ == "__main__":
     output_file = "F13.txt"
     num_processes = cpu_count()
 
-    with Pool(num_processes) as pool:
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        chunk_size = 2**24  # Adjust the chunk size based on your system's capabilities
+        start_values = range(1 << 24, 1 << 25, chunk_size)
+        end_values = [start + chunk_size for start in start_values]
+        args_list = [(target_address, start, end) for start, end in zip(start_values, end_values)]
+
         try:
-            private_key_start = 1 << 24
-            private_key_end = 1 << 66
-
-            # Generate a pool of private keys
-            private_keys = range(private_key_start, private_key_end)
-
-            # Distribute tasks to the pool
-            result = pool.map(generate_and_check_target, private_keys)
-
-            if any(result):
-                print("Программа завершена.")
+            futures = [executor.submit(generate_and_check_target, args) for args in args_list]
+            for future in as_completed(futures):
+                if future.result():
+                    print("Программа завершена.")
+                    break
         except KeyboardInterrupt:
-            pool.terminate()
-            pool.join()
+            executor.shutdown()
             print("Программа завершена.")
