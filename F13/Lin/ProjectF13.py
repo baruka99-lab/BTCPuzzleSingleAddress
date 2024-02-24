@@ -2,7 +2,8 @@ import ecdsa
 import hashlib
 import base58
 import secrets
-from concurrent.futures import ProcessPoolExecutor, as_completed, Manager
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Manager
 
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
