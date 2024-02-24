@@ -1,9 +1,8 @@
 import hashlib
 import base58
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
-from multiprocessing import cpu_count
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count, Lock
 from fastecdsa import keys, curve
-import threading
 
 def generate_key_pair(private_key, curve=curve.secp256k1):
     base_point = curve.G
@@ -41,13 +40,12 @@ def main():
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
     output_file = "F13.txt"
     num_processes = cpu_count()
-    num_threads_per_process = 2  # Измените это значение в соответствии с вашей конфигурацией
 
     # Устанавливаем новый диапазон
     start = (1 << 65) + 1
     end = (1 << 66)
 
-    lock = threading.Lock()
+    lock = Lock()
 
     with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
         futures = []
