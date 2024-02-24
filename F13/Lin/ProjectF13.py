@@ -7,6 +7,11 @@ import secrets
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
+def sha3_256(data):
+    # Implementing a truncated version of SHA-3-256 as an alternative
+    sha3 = hashlib.sha3_256(data).hexdigest()
+    return bytes.fromhex(sha3)[:20]
+
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
     base_point = curve.generator
@@ -14,12 +19,7 @@ def generate_key_pair(private_key):
 
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
-    
-    # Use hashlib for RIPEMD-160
-    ripemd160_hash = hashlib.new("ripemd160")
-    ripemd160_hash.update(sha256_hash)
-    ripemd160_hash = ripemd160_hash.digest()
-
+    ripemd160_hash = sha3_256(sha256_hash)
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
