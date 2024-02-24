@@ -23,6 +23,9 @@ def generate_and_check_target(private_key):
     target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
     current_private_key, current_address = generate_key_pair(private_key)
 
+    print(f"Приватный ключ: {hex(current_private_key)[2:]}")
+    print(f"Биткоин-адрес: {current_address}\n")
+
     if current_address == target_address:
         print(f"Найден целевой биткоин-адрес: {target_address}")
         print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
