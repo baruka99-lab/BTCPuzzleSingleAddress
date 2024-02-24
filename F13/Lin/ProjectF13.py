@@ -37,7 +37,9 @@ def generate_and_check_target(target_address, stop_flag, output_file, iterations
                 break
 
     except KeyboardInterrupt:
-        pass
+        print("Программа завершена вручную пользователем.")
+    except Exception as e:
+        print(f"Произошло исключение: {e}")
 
 if __name__ == "__main__":
     target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
@@ -45,7 +47,7 @@ if __name__ == "__main__":
 
     with Manager() as manager:
         stop_flag = manager.Event()
-        with ProcessPoolExecutor(max_workers=4) as process_executor:  # Уменьшено количество процессов
+        with ProcessPoolExecutor(max_workers=4) as process_executor:
             futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
 
             for future in as_completed(futures):
