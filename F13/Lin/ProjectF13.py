@@ -1,46 +1,63 @@
-from Crypto.Random import get_random_bytes
-from ecdsa import SigningKey, SECP256k1
-from bitcoinaddress import Wallet
+import ecdsa
+import hashlib
+import base58check
 from multiprocessing import Pool, cpu_count
+import secrets
 
-def generate_custom_address_parallel(args):
-    target_address, process_id = args
-    count = 0
-
+def generate_key_pair(process_id):
     while True:
-        count += 1
-        private_key_bytes = get_random_bytes(32)
-        private_key_obj = SigningKey.from_secret_exponent(int.from_bytes(private_key_bytes, 'big'), curve=SECP256k1)
-        
-        # Генерируем биткоин-адрес
-        bitcoin_address = Wallet(private_key_obj.to_string().hex()).to_address()
+        # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
+        secret_exponent = secrets.randbelow(2**25 - 2**24) + 2**24
 
-        print("Процесс {}: Итерация {}: Генерация приватного ключа: {}".format(process_id, count, private_key_obj.to_string().hex()))
-        print("Процесс {}: Биткоин-адрес: {}".format(process_id, bitcoin_address))
+        # Преобразование случайного числа в приватный ключ
+        private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
 
-        if bitcoin_address == target_address:
-            print("\nПроцесс {}: Совпадение найдено после {} итераций.".format(process_id, count))
-            print("Пользовательский Биткоин-адрес:", bitcoin_address)
-            print("Приватный ключ:", private_key_obj.to_string().hex())
+        # Получение сжатого публичного ключа
+        compressed_public_key = private_key.get_verifying_key().to_string("compressed")
 
-            # Запись в файл found13.txt
-            with open('found13.txt', 'w') as file:
-                file.write("Bitcoin Address: {}\n".format(bitcoin_address))
-                file.write("Private Key: {}\n".format(private_key_obj.to_string().hex()))
+        # Хеширование публичного ключа для получения отпечатка
+        public_key_hash = hashlib.new('ripemd160', hashlib.sha256(compressed_public_key).digest()).digest()
 
-            print("Информация записана в файл found13.txt.")
-            return bitcoin_address, private_key_obj.to_string().hex()
+        # Добавление префикса к хешу (для биткоин-адреса)
+        prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
 
-if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
-    processes = cpu_count()  # Получаем количество ядер CPU
-    pool = Pool(processes=processes)
-    args_list = [(target_address, i) for i in range(processes)]
+        # Вычисление контрольной суммы
+        checksum = hashlib.sha256(hashlib.sha256(prefixed_public_key_hash).digest()).digest()[:4]
 
-    results = pool.map(generate_custom_address_parallel, args_list)
+        # Формирование биткоин-адреса в base58check
+        bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
+
+        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
+        # Проверка и запись в файл found.txt или address.txt
+        if check_and_write_address(bitcoin_address, private_key):
+            # Прерывание цикла, если найден нужный адрес
+            break
+
+def check_and_write_address(bitcoin_address, private_key):
+    # Проверка наличия определенного адреса
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+    if bitcoin_address == target_address:
+        # Запись найденного адреса в файл
+        with open('found.txt', 'a') as found_file:
+            found_file.write(f"Found Target Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key: {private_key.to_string().hex()}\n")
+        print("Target Address Found!")
+        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+        return True
+
+    return False
+
+if __name__ == '__main__':
+    num_processes = cpu_count()
+    pool = Pool(num_processes)
+
+    # Запуск каждого процесса с уникальным идентификатором
+    pool.map(generate_key_pair, range(num_processes))
+
     pool.close()
     pool.join()
-
-    for result in results:
-        if result:
-            break
