@@ -1,7 +1,7 @@
 print("Start Project13")
 
 import ecdsa
-from Crypto.Hash import new as hashlib
+import hashlib
 import base58
 import secrets
 from concurrent.futures import ProcessPoolExecutor
@@ -13,16 +13,16 @@ def generate_key_pair(private_key):
     base_private_key_point = base_point * private_key
 
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    sha256_hash = hashlib("sha256")
-    sha256_hash.update(base_public_key_bytes)
-    ripemd160_hash = hashlib("ripemd160")
-    ripemd160_hash.update(sha256_hash.digest())
-    network_byte = b"\x00"
-    checksum = hashlib("sha256")
-    checksum.update(hashlib("sha256").update(network_byte + ripemd160_hash.digest()).digest())
-    checksum = checksum.digest()[:4]
+    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
+    
+    # Use hashlib for RIPEMD-160
+    ripemd160_hash = hashlib.new("ripemd160")
+    ripemd160_hash.update(sha256_hash)
+    ripemd160_hash = ripemd160_hash.digest()
 
-    address = base58.b58encode(network_byte + ripemd160_hash.digest() + checksum).decode("utf-8")
+    network_byte = b"\x00"
+    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
+    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
     return private_key, address
 
