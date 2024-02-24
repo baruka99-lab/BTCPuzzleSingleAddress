@@ -1,80 +1,60 @@
-import os
 import hashlib
-import binascii
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import base58
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
 from fastecdsa import keys, curve
-import sys
-import threading
 
-# Укажите свои адреса вместо предполагаемых значений
-CUSTOM_ADDRESSES = {"13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"}
+def generate_key_pair(private_key):
+    base_point = curve.secp256k1.G
+    base_private_key_point = base_point * private_key
 
-# Блокировка для синхронизации вывода
-print_lock = threading.Lock()
+    base_public_key_bytes = keys.get_public_key(base_private_key_point, curve=curve.secp256k1, compressed=True)
+    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
+    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+    network_byte = b"\x00"
+    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
+    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
 
-def generate_private_key():
-    """Generate a random 66-bit hex integer which serves as a randomly generated Bitcoin private key."""
-    lower_limit = 2**65
-    upper_limit = (2**66 - 2**65) - 1
-    random_value = int.from_bytes(os.urandom(8), byteorder='big')
-    
-    # Проверка на деление на ноль
-    if (upper_limit - lower_limit + 1) == 0:
-        return None
-    
-    private_key = hex(random_value % (upper_limit - lower_limit + 1) + lower_limit)[2:]
-    return private_key.upper()
+    return private_key, address
 
-def private_key_to_public_key(private_key):
-    """Convert hex private key to its respective compressed public key."""
-    c = int('0x%s' % private_key, 0)
-    d = keys.get_public_key(c, curve.secp256k1)
-    return '02%s' % ('{0:x}'.format(int(d.x)))
+def generate_and_check_target(target_address, output_file, start, end):
+    for private_key in range(start, end):
+        current_private_key, current_address = generate_key_pair(private_key)
 
-def public_key_to_address(public_key):
-    """Convert compressed public key to its respective P2PKH wallet address."""
-    output = []
-    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-    var = hashlib.new('ripemd160')
-    try:
-        var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
-        var = '00' + var.hexdigest() + hashlib.sha256(
-            hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()[0:8]
-        count = [char != '0' for char in var].index(True) // 2
-        n = int(var, 16)
-        while n > 0:
-            n, remainder = divmod(n, 58)
-            output.append(alphabet[remainder])
-        for i in range(count): output.append(alphabet[0])
-        return ''.join(output[::-1])
-    except:
-        return -1
+        if current_address == target_address:
+            print(f"Найден целевой биткоин-адрес: {target_address}")
+            print(f"Приватный ключ для целевого адреса: {hex(current_private_key)[2:]}")
 
-def process(private_key, public_key, address, custom_addresses, process_id):
-    """Check if the address is in the custom addresses list."""
-    with print_lock:
-        print(f'Process {process_id}: Generated Bitcoin Address: {address}')
-        print(f'Process {process_id}: Corresponding Private Key: {private_key}\n')
+            with open(output_file, "a") as file:
+                file.write(f"Целевой биткоин-адрес: {target_address}\n")
+                file.write(f"Приватный ключ: {hex(current_private_key)[2:]}\n")
 
-def generate_and_process_keys(custom_addresses, process_id, total_keys):
-    print(f"Process {process_id} starting")
-    for _ in range(total_keys):
-        private_key = generate_private_key()  # 66 bits
-        if private_key is not None:
-            public_key = private_key_to_public_key(private_key)
-            address = public_key_to_address(public_key)
-            if address != -1:
-                process(private_key, public_key, address, custom_addresses, process_id)
-    print(f"Process {process_id} finished")
+            return
 
-if __name__ == '__main__':
-    custom_addresses = set(CUSTOM_ADDRESSES)
-    processes = os.cpu_count()
+if __name__ == "__main__":
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
+    output_file = "F13.txt"
+    num_processes = cpu_count()
 
-    with ThreadPoolExecutor(max_workers=processes) as executor:
-        futures = [executor.submit(generate_and_process_keys, custom_addresses, i, total_keys=10) for i in range(processes)]
+    # Устанавливаем новый диапазон
+    start = (1 << 65) + 1
+    end = (1 << 66)
 
+    with ProcessPoolExecutor(max_workers=num_processes) as process_executor:
+        futures = []
+
+        # Разбиваем диапазон приватных ключей между процессами
+        chunk_size = (end - start) // num_processes
+        for i in range(num_processes):
+            chunk_start = start + i * chunk_size
+            chunk_end = start + (i + 1) * chunk_size if i != num_processes - 1 else end
+            futures.append(process_executor.submit(generate_and_check_target, target_address, output_file, chunk_start, chunk_end))
+
+        # Ждем завершения всех процессов
         for future in as_completed(futures):
-            future.result()
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Произошла ошибка: {e}")
 
-    print("All processes finished")
+    print("Программа завершена.")
