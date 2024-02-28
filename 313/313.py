@@ -43,7 +43,8 @@ def worker(bitcoin_address, key_size, offset, result_dict):
 
         # Use the public key to generate the bitcoin address
         sha256_hash = hashlib.sha256(compressed_public_key).digest()
-        ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+        ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest() if hasattr(hashlib, 'new') else hashlib.new('ripemd160', sha256_hash).digest()
+
         network_byte = b"\x00"
         checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
         generated_bitcoin_address = base58check.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
