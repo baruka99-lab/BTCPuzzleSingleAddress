@@ -34,9 +34,9 @@ def generate_key_pair(process_id):
         # Формирование биткоин-адреса в base58check
         bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        #print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        #print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
         # Проверка и запись в файл found.txt или address.txt
         if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
