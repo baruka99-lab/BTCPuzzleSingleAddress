@@ -1,4 +1,4 @@
-print("Старт!")
+print("Старт! Удачи Бро!")
 
 import ecdsa
 import hashlib
@@ -14,7 +14,10 @@ def generate_key_pair(private_key):
 
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
-    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+
+    # Используем hashlib для алгоритма ripemd160
+    ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
+
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
@@ -28,18 +31,21 @@ def generate_and_check_target(target_address, stop_flag, output_file):
             private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
             current_private_key, current_address = generate_key_pair(private_key)
 
-            #print(f"Iсходный приватный ключ: {current_private_key}")
-            #print(f"Iсходный биткоин-адрес: {current_address}\n")
+            # Изменение формата вывода приватного ключа на десятичный
+            current_private_key_decimal = str(current_private_key)
+
+            print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
+            print(f"Iсходный биткоин-адрес: {current_address}\n")
 
             if current_address == target_address:
                 print(f"Найден целевой биткоин-адрес: {target_address}")
-                print(f"Приватный ключ для целевого адреса: {current_private_key}")
+                print(f"Приватный ключ для целевого адреса (в десятичном формате): {current_private_key_decimal}")
                 stop_flag.set()
 
                 # Запись в файл
                 with open(output_file, "a") as file:
                     file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                    file.write(f"Приватный ключ: {current_private_key}\n")
+                    file.write(f"Приватный ключ (в десятичном формате): {current_private_key_decimal}\n")
 
                 break
 
