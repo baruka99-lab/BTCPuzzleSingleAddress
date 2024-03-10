@@ -15,7 +15,7 @@ def generate_key_pair(private_key):
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
     sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
 
-    # Используем hashlib вместо python3-ripemd
+    # Используем встроенную библиотеку hashlib для RIPEMD-160
     ripemd160_hash = hashlib.new("ripemd160")
     ripemd160_hash.update(sha256_hash)
     ripemd160_hash = ripemd160_hash.digest()
