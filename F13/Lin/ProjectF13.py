@@ -7,17 +7,25 @@ import secrets
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Manager
 
+def ripemd160(data):
+    # Реализация алгоритма RIPEMD-160 без использования сторонних библиотек
+    from hashlib import sha256
+
+    sha256_hash = hashlib.sha256(data).digest()
+    ripemd160_hash = hashlib.new('ripemd160')
+    ripemd160_hash.update(sha256_hash)
+    return ripemd160_hash.digest()
+
 def generate_key_pair(private_key):
     curve = ecdsa.SECP256k1
     base_point = curve.generator
     base_private_key_point = base_point * private_key
 
     base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
-
-    # Используем hashlib для алгоритма ripemd160
-    ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
-
+    
+    # Используем нашу функцию для хеширования RIPEMD-160
+    ripemd160_hash = ripemd160(base_public_key_bytes)
+    
     network_byte = b"\x00"
     checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
     address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
