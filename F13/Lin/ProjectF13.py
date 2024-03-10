@@ -1,68 +1,73 @@
-print("Старт! Удачи Бро!")
+print("Start")
 
-import ecdsa
 import hashlib
-import base58
+import ecdsa
+from Crypto.Hash import RIPEMD160
+import base58check
+from multiprocessing import Pool, cpu_count
 import secrets
-from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import Manager
 
-def generate_key_pair(private_key):
-    curve = ecdsa.SECP256k1
-    base_point = curve.generator
-    base_private_key_point = base_point * private_key
+def generate_key_pair(process_id):
+    while True:
+        # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
+        secret_exponent = secrets.randbelow(2**160 - 2**159) + 2**159
 
-    base_public_key_bytes = ecdsa.VerifyingKey.from_public_point(base_private_key_point, curve).to_string("compressed")
-    sha256_hash = hashlib.sha256(base_public_key_bytes).digest()
+        # Преобразование случайного числа в приватный ключ
+        private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
 
-    # Используем встроенную библиотеку hashlib для RIPEMD-160
-    ripemd160_hash = hashlib.new("ripemd160")
-    ripemd160_hash.update(sha256_hash)
-    ripemd160_hash = ripemd160_hash.digest()
+        # Получение сжатого публичного ключа
+        compressed_public_key = private_key.get_verifying_key().to_string("compressed")
 
-    network_byte = b"\x00"
-    checksum = hashlib.sha256(hashlib.sha256(network_byte + ripemd160_hash).digest()).digest()[:4]
-    address = base58.b58encode(network_byte + ripemd160_hash + checksum).decode("utf-8")
+        # Хеширование публичного ключа для получения отпечатка
+        h = RIPEMD160.new()
+        h.update(hashlib.sha256(compressed_public_key).digest())
+        public_key_hash = h.digest()
 
-    return private_key, address
+        # Добавление префикса к хешу (для биткоин-адреса)
+        prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
 
-def generate_and_check_target(target_address, stop_flag, output_file):
-    try:
-        while not stop_flag.is_set():
-            # Генерация случайного числа в диапазоне (2^65) до (2^66 - 1)
-            private_key = secrets.randbelow(1 << 66 - 1) + (1 << 65)
-            current_private_key, current_address = generate_key_pair(private_key)
+        # Вычисление контрольной суммы
+        h = hashlib.sha256()
+        h.update(hashlib.sha256(prefixed_public_key_hash).digest())
+        checksum = h.digest()[:4]
 
-            # Изменение формата вывода приватного ключа на десятичный
-            current_private_key_decimal = str(current_private_key)
+        # Формирование биткоин-адреса в base58check
+        bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-            print(f"Iсходный приватный ключ: {hex(current_private_key)[2:]}")
-            print(f"Iсходный биткоин-адрес: {current_address}\n")
+        # Приватный ключ в десятичном формате
+        private_key_decimal = int(private_key.to_string().hex(), 16)
 
-            if current_address == target_address:
-                print(f"Найден целевой биткоин-адрес: {target_address}")
-                print(f"Приватный ключ для целевого адреса (в десятичном формате): {current_private_key_decimal}")
-                stop_flag.set()
+        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
-                # Запись в файл
-                with open(output_file, "a") as file:
-                    file.write(f"Целевой биткоин-адрес: {target_address}\n")
-                    file.write(f"Приватный ключ (в десятичном формате): {current_private_key_decimal}\n")
+        # Проверка и запись в файл found.txt или address.txt
+        if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
+            # Прерывание цикла, если найден нужный адрес
+            break
 
-                break
+def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
+    # Проверка наличия определенного адреса
+    target_address = "1NBC8uXJy1GiJ6drkiZa1WuKn51ps7EPTv"  # Целевой адрес
+    if bitcoin_address == target_address:
+        # Запись найденного адреса в файл
+        with open('F13.txt', 'a') as found_file:
+            found_file.write(f"Found Target Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Hex): {private_key.to_string().hex()}\n")
+            found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
+        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+        return True
 
-    except KeyboardInterrupt:
-        pass
+    return False
 
-if __name__ == "__main__":
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"
-    output_file = "F13.txt"
+if __name__ == '__main__':
+    num_processes = cpu_count()
+    pool = Pool(num_processes)
 
-    with ProcessPoolExecutor() as process_executor, Manager() as manager:
-        stop_flag = manager.Event()
-        futures = [process_executor.submit(generate_and_check_target, target_address, stop_flag, output_file) for _ in range(process_executor._max_workers)]
+    # Запуск каждого процесса с уникальным идентификатором
+    pool.map(generate_key_pair, range(num_processes))
 
-        for future in futures:
-            future.result()
-
-    print("Программа завершена.")
+    pool.close()
+    pool.join()
