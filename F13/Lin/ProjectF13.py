@@ -7,44 +7,49 @@ import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
 
+used_private_keys = set()
+
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(2**66 - 2**65) + 2*65
+        secret_exponent = secrets.randbelow(1 << 66 - 1) + (1 << 65)
 
-        # Преобразование случайного числа в приватный ключ
-        private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
+        if secret_exponent not in used_private_keys:
+            used_private_keys.add(secret_exponent)
 
-        # Получение сжатого публичного ключа
-        compressed_public_key = private_key.get_verifying_key().to_string("compressed")
+            # Преобразование случайного числа в приватный ключ
+            private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
 
-        # Хеширование публичного ключа для получения отпечатка
-        h = RIPEMD160.new()
-        h.update(hashlib.sha256(compressed_public_key).digest())
-        public_key_hash = h.digest()
+            # Получение сжатого публичного ключа
+            compressed_public_key = private_key.get_verifying_key().to_string("compressed")
 
-        # Добавление префикса к хешу (для биткоин-адреса)
-        prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
+            # Хеширование публичного ключа для получения отпечатка
+            h = RIPEMD160.new()
+            h.update(hashlib.sha256(compressed_public_key).digest())
+            public_key_hash = h.digest()
 
-        # Вычисление контрольной суммы
-        h = hashlib.sha256()
-        h.update(hashlib.sha256(prefixed_public_key_hash).digest())
-        checksum = h.digest()[:4]
+            # Добавление префикса к хешу (для биткоин-адреса)
+            prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
 
-        # Формирование биткоин-адреса в base58check
-        bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
+            # Вычисление контрольной суммы
+            h = hashlib.sha256()
+            h.update(hashlib.sha256(prefixed_public_key_hash).digest())
+            checksum = h.digest()[:4]
 
-        # Приватный ключ в десятичном формате
-        private_key_decimal = int(private_key.to_string().hex(), 16)
+            # Формирование биткоин-адреса в base58check
+            bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+            # Приватный ключ в десятичном формате
+            private_key_decimal = int(private_key.to_string().hex(), 16)
 
-        # Проверка и запись в файл found.txt или address.txt
-        if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
-            # Прерывание цикла, если найден нужный адрес
-            break
+            print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+            print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+            print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
+            # Проверка и запись в файл found.txt или address.txt
+            if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
+                # Прерывание цикла, если найден нужный адрес
+                break
 
 def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
     # Проверка наличия определенного адреса
