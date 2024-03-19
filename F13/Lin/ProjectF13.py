@@ -27,7 +27,6 @@ def private_key_to_public_key(private_key, fastecdsa=True, compressed=True):
             return '04' + pk.publicKey().toString().hex().upper()
 
 def public_key_to_address(public_key, compressed=True):
-    output = []
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
     encoding = binascii.unhexlify(public_key.encode())
@@ -39,10 +38,12 @@ def public_key_to_address(public_key, compressed=True):
     var_hex = '00' + var.hexdigest() + hashlib.sha256(digest).hexdigest()[0:8]
     count = [char != '0' for char in var_hex].index(True) // 2
     n = int(var_hex, 16)
+    output = []
     while n > 0:
         n, remainder = divmod(n, 58)
         output.append(alphabet[remainder])
-    for i in range(count): output.append(alphabet[0])
+    for i in range(count):
+        output.append(alphabet[0])
     return ''.join(output[::-1])
 
 def compress_public_key(public_key):
@@ -76,12 +77,10 @@ def generate_key_pair(process_id, target_address, compressed=True):
         wif = private_key_to_wif(private_key)
 
         # Check and write address to file
-        check_and_write_address(process_id, public_key, address, private_key, wif, target_address)
+        if check_and_write_address(process_id, public_key, address, private_key, wif, target_address):
+            break
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif, target_address):
-    #print(f"Process {process_id}: Private Key: {private_key}")
-    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
         with open('F13.txt', 'a') as found_file:
