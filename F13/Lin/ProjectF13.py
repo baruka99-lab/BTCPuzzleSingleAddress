@@ -1,18 +1,22 @@
-from fastecdsa import keys, curve, ecdsa
+from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
 import random
 
 def generate_private_key():
-    return keys.gen_private_key(curve.secp256k1)
+    def generate_private_key():
+    return hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = ecdsa.PrivateKey(private_key, curve=curve.secp256k1)
+    public_key = keys.get_public_key(private_key, curve.secp256k1)
+    x = hex(public_key.x)[2:].zfill(64)
+    y = hex(public_key.y)[2:].zfill(64)
     if compressed:
-        return key.get_verifying_key().to_string('compressed').hex()
+        prefix = '02' if public_key.y % 2 == 0 else '03'
+        return prefix + x
     else:
-        return key.get_verifying_key().to_string('uncompressed').hex()
+        return '04' + x + y
 
 def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
