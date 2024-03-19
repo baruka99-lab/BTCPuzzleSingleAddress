@@ -8,11 +8,11 @@ def generate_private_key():
     return hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = ecdsa.PrivateKey(private_key, curve=curve.secp256k1)
+    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
     if compressed:
-        return key.get_verifying_key().to_string('compressed').hex()
+        return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
     else:
-        return key.get_verifying_key().to_string('uncompressed').hex()
+        return '04' + (hex(key.x)[2:].zfill(64) + hex(key.y)[2:].zfill(64))
 
 def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
