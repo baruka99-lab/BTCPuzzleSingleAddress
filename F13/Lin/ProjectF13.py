@@ -16,10 +16,10 @@ def generate_key_pair(process_id):
         secret_exponent = secrets.randbelow(1 << 25 - 1) + (1 << 24)
 
         # Преобразование случайного числа в приватный ключ
-        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1)
+        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.P256)
 
         # Получение полного публичного ключа
-        public_key = fastecdsa.keys.get_public_key(private_key)
+        public_key = fastecdsa.keys.get_public_key(private_key, curve=fastecdsa.curve.P256)
 
         # Сжатие публичного ключа вручную
         compressed_public_key = SEC1Encoder().encode_public_key(public_key, compressed=True)
