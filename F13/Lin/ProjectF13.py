@@ -36,7 +36,7 @@ def public_key_to_address(public_key):
     return ''.join(output[::-1])
 
 def private_key_to_wif(private_key):
-    return binascii.hexlify(keys.encode_privkey(int(private_key, 16), 'wif_compressed', 0x80)).decode()
+    return keys.get_wif(int(private_key, 16), compressed=True, version=0x80)
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
