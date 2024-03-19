@@ -1,69 +1,87 @@
-print("Start")
-
+from fastecdsa import keys, curve
+from ellipticcurve.privateKey import PrivateKey
+from multiprocessing import cpu_count, Pool
 import hashlib
-import ecdsa
-from Crypto.Hash import RIPEMD160
-import base58check
-from multiprocessing import Pool, cpu_count
-import secrets
+import binascii
+import os
+import random
 
-def generate_key_pair(process_id):
+def generate_private_key():
+    return hex((random.randrange(1 << 15 - 1) + (1 << 14)))[2:].upper().zfill(64)
+
+def private_key_to_public_key(private_key, fastecdsa=True):
+    if fastecdsa:
+        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
+        return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
+    else:
+        pk = PrivateKey().fromString(bytes.fromhex(private_key))
+        return '04' + pk.publicKey().toString().hex().upper()
+
+def public_key_to_address(public_key):
+    output = []
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    var = hashlib.new('ripemd160')
+    encoding = binascii.unhexlify(public_key.encode())
+    var.update(hashlib.sha256(encoding).digest())
+    var_encoded = ('00' + var.hexdigest()).encode()
+    digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
+    var_hex = '00' + var.hexdigest() + hashlib.sha256(digest).hexdigest()[0:8]
+    count = [char != '0' for char in var_hex].index(True) // 2
+    n = int(var_hex, 16)
+    while n > 0:
+        n, remainder = divmod(n, 58)
+        output.append(alphabet[remainder])
+    for i in range(count): output.append(alphabet[0])
+    return ''.join(output[::-1])
+
+def private_key_to_wif(private_key):
+    digest = hashlib.sha256(binascii.unhexlify('80' + private_key)).hexdigest()
+    var = hashlib.sha256(binascii.unhexlify(digest)).hexdigest()
+    var = binascii.unhexlify('80' + private_key + var[0:8])
+    alphabet = chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    value = pad = 0
+    result = ''
+    for i, c in enumerate(var[::-1]): value += 256**i * c
+    while value >= len(alphabet):
+        div, mod = divmod(value, len(alphabet))
+        result, value = chars[mod] + result, div
+    result = chars[value] + result
+    for c in var:
+        if c == 0: pad += 1
+        else: break
+    return chars[0] * pad + result
+
+def generate_key_pair(process_id, target_address):
     while True:
-        # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(2**160 - 2**159) + 2**159
+        private_key = generate_private_key()
+        public_key = private_key_to_public_key(private_key)
+        address = public_key_to_address(public_key)
+        wif = private_key_to_wif(private_key)
 
-        # Преобразование случайного числа в приватный ключ
-        private_key = ecdsa.SigningKey.from_secret_exponent(secret_exponent, curve=ecdsa.SECP256k1)
+        # Check and write address to file
+        check_and_write_address(process_id, public_key, address, private_key, wif, target_address)
 
-        # Получение сжатого публичного ключа
-        compressed_public_key = private_key.get_verifying_key().to_string("compressed")
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif, target_address):
+    print(f"Process {process_id}: Private Key: {private_key}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
-        # Хеширование публичного ключа для получения отпечатка
-        h = RIPEMD160.new()
-        h.update(hashlib.sha256(compressed_public_key).digest())
-        public_key_hash = h.digest()
-
-        # Добавление префикса к хешу (для биткоин-адреса)
-        prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
-
-        # Вычисление контрольной суммы
-        h = hashlib.sha256()
-        h.update(hashlib.sha256(prefixed_public_key_hash).digest())
-        checksum = h.digest()[:4]
-
-        # Формирование биткоин-адреса в base58check
-        bitcoin_address = base58check.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
-
-        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-
-        # Проверка и запись в файл found.txt или address.txt
-        if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
-            # Прерывание цикла, если найден нужный адрес
-            break
-
-def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key):
-    # Проверка наличия определенного адреса
-    target_address = "1NBC8uXJy1GiJ6drkiZa1WuKn51ps7EPTv"  # Целевой адрес
     if bitcoin_address == target_address:
-        # Запись найденного адреса в файл
+        print(f"Process {process_id}: Target Address Found!")
         with open('F13.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key: {private_key.to_string().hex()}\n")
-        print(f"Process {process_id}: Private Key: {private_key.to_string().hex()}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Hex): {private_key}\n")
+            found_file.write(f"WIF: {wif}\n")
+            found_file.write(f"Public Key: {public_key}\n")
         return True
-
     return False
 
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
+    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
 
-    # Запуск каждого процесса с уникальным идентификатором
-    pool.map(generate_key_pair, range(num_processes))
+    # Start each process with a unique identifier
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
