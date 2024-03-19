@@ -40,31 +40,25 @@ def generate_key_pair(process_id):
         # Формирование биткоин-адреса в base58check
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        # Проверка адреса на соответствие требуемому началу
-        if bitcoin_address.startswith("1QCbW"):
-            # Приватный ключ в десятичном формате
-            private_key_decimal = int(private_key)
+        # Вывод сгенерированного адреса и приватного ключа в консоль
+        print(f"Process {process_id}: Generated Bitcoin Address: {bitcoin_address}")
+        print(f"Process {process_id}: Generated Private Key: {private_key.hex()}")
 
-            # Проверка и запись в файл found.txt или address.txt
-            if check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
-                # Прерывание цикла, если найден нужный адрес
-                break
+        # Приватный ключ в десятичном формате
+        private_key_decimal = int(private_key)
+
+        # Проверка и запись в файл found.txt или address.txt
+        check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal)
 
 def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
-    # Проверка наличия определенного адреса
-    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
-    if bitcoin_address == target_address:
-        # Запись найденного адреса в файл
-        with open('F13.txt', 'a') as found_file:
-            found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Hex): {private_key}\n")
-            found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
-        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-        return True
-
-    return False
+    # Запись найденного адреса и приватного ключа в файл
+    with open('F13.txt', 'a') as found_file:
+        found_file.write(f"Found Bitcoin Address: {bitcoin_address}\n")
+        found_file.write(f"Private Key (Hex): {private_key}\n")
+        found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
+    print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+    print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
 if __name__ == '__main__':
     num_processes = cpu_count()
