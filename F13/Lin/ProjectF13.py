@@ -5,7 +5,7 @@ import binascii
 import random
 
 def generate_private_key():
-    return keys.gen_private_key(curve.secp256k1)
+    return hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key), curve.secp256k1)
