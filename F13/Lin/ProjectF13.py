@@ -13,7 +13,7 @@ from fastecdsa.encoding.sec1 import SEC1Encoder
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow((1 << 15) - 1) + (1 << 14)
+        secret_exponent = secrets.randbits(65) + (1 << 65)
 
         # Преобразование случайного числа в приватный ключ
         private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.P256)
@@ -51,14 +51,21 @@ def generate_key_pair(process_id):
         check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal)
 
 def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
-    # Запись найденного адреса и приватного ключа в файл
-    with open('F13.txt', 'a') as found_file:
-        found_file.write(f"Found Bitcoin Address: {bitcoin_address}\n")
-        found_file.write(f"Private Key (Hex): {private_key:x}\n")
-        found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
-    print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
-    print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+    target_address = "YOUR_TARGET_ADDRESS_HERE"  # Замените на ваш целевой адрес
+
+    if bitcoin_address == target_address:
+        # Запись найденного адреса и приватного ключа в файл
+        with open('F13.txt', 'a') as found_file:
+            found_file.write(f"Found Bitcoin Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Hex): {private_key:x}\n")
+            found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
+        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
+    else:
+        print(f"Process {process_id}: Generated Bitcoin Address: {bitcoin_address}")
+        print(f"Process {process_id}: Generated Private Key: {private_key:x}")
 
 if __name__ == '__main__':
     num_processes = cpu_count()
