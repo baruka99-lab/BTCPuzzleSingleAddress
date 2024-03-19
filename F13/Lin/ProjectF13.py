@@ -1,64 +1,82 @@
-print("Start!")
-
+from fastecdsa import keys, curve
+from ellipticcurve.privateKey import PrivateKey
+from multiprocessing import cpu_count, Pool
 import hashlib
-import base58
-from Crypto.Hash import RIPEMD
-import base58check
-from multiprocessing import Pool, cpu_count
-import secrets
-from fastecdsa import keys, curve, encoding
+import binascii
+import os
+import random
+
+def generate_private_key():
+    return hex((random.randrange(1 << 15 - 1) + (1 << 14)))[2:].upper()
+
+def private_key_to_public_key(private_key, fastecdsa=True):
+    if fastecdsa:
+        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
+        return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
+    else:
+        pk = PrivateKey().fromString(bytes.fromhex(private_key))
+        return '04' + pk.publicKey().toString().hex().upper()
+
+def public_key_to_address(public_key):
+    output = []
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    var = hashlib.new('ripemd160')
+    encoding = binascii.unhexlify(public_key.encode())
+    var.update(hashlib.sha256(encoding).digest())
+    var_encoded = ('00' + var.hexdigest()).encode()
+    digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
+    var_hex = '00' + var.hexdigest() + hashlib.sha256(digest).hexdigest()[0:8]
+    count = [char != '0' for char in var_hex].index(True) // 2
+    n = int(var_hex, 16)
+    while n > 0:
+        n, remainder = divmod(n, 58)
+        output.append(alphabet[remainder])
+    for i in range(count): output.append(alphabet[0])
+    return ''.join(output[::-1])
+
+def private_key_to_wif(private_key):
+    digest = hashlib.sha256(binascii.unhexlify('80' + private_key)).hexdigest()
+    var = hashlib.sha256(binascii.unhexlify(digest)).hexdigest()
+    var = binascii.unhexlify('80' + private_key + var[0:8])
+    alphabet = chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    value = pad = 0
+    result = ''
+    for i, c in enumerate(var[::-1]): value += 256**i * c
+    while value >= len(alphabet):
+        div, mod = divmod(value, len(alphabet))
+        result, value = chars[mod] + result, div
+    result = chars[value] + result
+    for c in var:
+        if c == 0: pad += 1
+        else: break
+    return chars[0] * pad + result
 
 def generate_key_pair(process_id):
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+    private_key = generate_private_key()
+    public_key = private_key_to_public_key(private_key)
+    address = public_key_to_address(public_key)
+    wif = private_key_to_wif(private_key)
+    
+    # Check and write address to file
+    check_and_write_address(process_id, public_key, address, private_key, wif)
 
-    while True:
-        # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(1 << 25 - 1) + (1 << 24)
-
-        # Преобразование случайного числа в приватный ключ
-        private_key = keys.gen_private_key(curve.secp256k1)
-
-        # Получение публичного ключа
-        public_key = keys.get_public_key(private_key, curve.secp256k1)
-
-        # Сжатие публичного ключа
-        compressed_public_key = encoding.sec1.SEC1Encoder().encode_public_key(public_key, compressed=True)
-
-        # Хеширование публичного ключа для получения отпечатка
-        h = RIPEMD.new()
-        h.update(hashlib.sha256(compressed_public_key).digest())
-        public_key_hash = h.digest()
-
-        # Добавление префикса к хешу (для биткоин-адреса)
-        prefixed_public_key_hash = b'\x00' + public_key_hash  # 0x00 для основной сети (mainnet)
-
-        # Вычисление контрольной суммы
-        h = hashlib.sha256()
-        h.update(hashlib.sha256(prefixed_public_key_hash).digest())
-        checksum = h.digest()[:4]
-
-        # Формирование биткоин-адреса в base58check
-        bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
-
-        # Приватный ключ в десятичном формате
-        private_key_decimal = int.from_bytes(private_key, byteorder='big')
-
-        # Если найден целевой адрес, выводим его и завершаем выполнение
-        if bitcoin_address == target_address:
-            print(f"Process {process_id}: Target Address found!")
-            print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}")
-            print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
-            with open('F13.txt', 'a') as found_file:
-                found_file.write(f"Found Target Address: {bitcoin_address}\n")
-                found_file.write(f"Private Key (Hex): {private_key.hex()}\n")
-                found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
-            return
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif):
+    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
+    if bitcoin_address == target_address:
+        with open('F13.txt', 'a') as found_file:
+            found_file.write(f"Found Target Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Hex): {private_key}\n")
+            found_file.write(f"WIF: {wif}\n")
+            found_file.write(f"Public Key: {public_key}\n")
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+        return True
+    return False
 
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
 
-    # Запуск каждого процесса с уникальным идентификатором
+    # Start each process with a unique identifier
     pool.map(generate_key_pair, range(num_processes))
 
     pool.close()
