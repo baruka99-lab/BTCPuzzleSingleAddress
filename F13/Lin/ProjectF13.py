@@ -9,6 +9,8 @@ import secrets
 from fastecdsa import keys, curve, encoding
 
 def generate_key_pair(process_id):
+    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
         secret_exponent = secrets.randbelow(1 << 25 - 1) + (1 << 24)
@@ -41,15 +43,16 @@ def generate_key_pair(process_id):
         # Приватный ключ в десятичном формате
         private_key_decimal = int.from_bytes(private_key, byteorder='big')
 
-        # Запись сгенерированных адреса и приватного ключа в файл
-        with open('F13.txt', 'a') as found_file:
-            found_file.write(f"Bitcoin Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Hex): {private_key.hex()}\n")
-            found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
-
-        # Вывод сгенерированных адреса и приватного ключа в консоль
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}")
-        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+        # Если найден целевой адрес, выводим его и завершаем выполнение
+        if bitcoin_address == target_address:
+            print(f"Process {process_id}: Target Address found!")
+            print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}")
+            print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
+            with open('F13.txt', 'a') as found_file:
+                found_file.write(f"Found Target Address: {bitcoin_address}\n")
+                found_file.write(f"Private Key (Hex): {private_key.hex()}\n")
+                found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
+            return
 
 if __name__ == '__main__':
     num_processes = cpu_count()
