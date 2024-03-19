@@ -3,6 +3,7 @@ from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
 import random
+import base58
 
 def generate_private_key():
     return int(hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64), 16)
@@ -36,7 +37,12 @@ def public_key_to_address(public_key):
     return ''.join(output[::-1])
 
 def private_key_to_wif(private_key):
-    return binascii.hexlify(keys.encode_privkey(int(private_key, 16), 'wif_compressed', 0x80)).decode()
+    hex_key = private_key[2:]  # Удаляем префикс "0x"
+    if len(hex_key) % 2 != 0:
+        hex_key = '0' + hex_key  # Дополняем нулем, если нечетное количество символов
+    bin_key = binascii.unhexlify(hex_key)  # Преобразуем в бинарный формат
+    wif = base58.b58encode(bin_key)  # Кодируем в формат WIF
+    return wif.decode()  # Возвращаем строку
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
