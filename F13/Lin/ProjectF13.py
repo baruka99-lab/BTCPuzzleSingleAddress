@@ -13,7 +13,7 @@ from fastecdsa.encoding.sec1 import SEC1Encoder
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(1 << 15 - 1) + (1 << 14)
+        secret_exponent = secrets.randbelow((1 << 15) - 1) + (1 << 14)
 
         # Преобразование случайного числа в приватный ключ
         private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.P256)
