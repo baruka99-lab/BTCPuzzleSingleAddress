@@ -8,6 +8,7 @@ from multiprocessing import Pool, cpu_count
 import secrets
 import fastecdsa.keys
 import fastecdsa.curve
+from fastecdsa.encoding.sec1 import SEC1Encoder
 
 def generate_key_pair(process_id):
     while True:
@@ -17,8 +18,11 @@ def generate_key_pair(process_id):
         # Преобразование случайного числа в приватный ключ
         private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.secp256k1)
 
-        # Получение сжатого публичного ключа
-        compressed_public_key = fastecdsa.keys.get_public_key(private_key, compressed=True)
+        # Получение полного публичного ключа
+        public_key = fastecdsa.keys.get_public_key(private_key)
+
+        # Сжатие публичного ключа вручную
+        compressed_public_key = SEC1Encoder().encode_public_key(public_key, compressed=True)
 
         # Хеширование публичного ключа для получения отпечатка
         h = RIPEMD.new()
