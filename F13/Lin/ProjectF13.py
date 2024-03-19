@@ -42,7 +42,7 @@ def generate_key_pair(process_id):
 
         # Вывод сгенерированного адреса и приватного ключа в консоль
         print(f"Process {process_id}: Generated Bitcoin Address: {bitcoin_address}")
-        print(f"Process {process_id}: Generated Private Key: {private_key.hex()}")
+        print(f"Process {process_id}: Generated Private Key: {private_key:x}")
 
         # Приватный ключ в десятичном формате
         private_key_decimal = int(private_key)
@@ -54,7 +54,7 @@ def check_and_write_address(process_id, compressed_public_key, bitcoin_address, 
     # Запись найденного адреса и приватного ключа в файл
     with open('F13.txt', 'a') as found_file:
         found_file.write(f"Found Bitcoin Address: {bitcoin_address}\n")
-        found_file.write(f"Private Key (Hex): {private_key}\n")
+        found_file.write(f"Private Key (Hex): {private_key:x}\n")
         found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
     print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
     print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
