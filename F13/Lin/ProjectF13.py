@@ -41,7 +41,7 @@ def generate_key_pair(process_id):
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
         # Проверка адреса на соответствие требуемому началу
-        if bitcoin_address.startswith("13zb1hQ"):
+        if bitcoin_address.startswith("1QCbW"):
             # Приватный ключ в десятичном формате
             private_key_decimal = int(private_key)
 
