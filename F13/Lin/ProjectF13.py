@@ -9,13 +9,14 @@ import random
 def generate_private_key():
     return hex((random.randrange(1 << 15 - 1) + (1 << 14)))[2:].upper()
 
-def private_key_to_public_key(private_key, fastecdsa=True):
-    if fastecdsa:
+def private_key_to_public_key(private_key, compressed=True):
+    if compressed:
+        pk = PrivateKey().fromString(bytes.fromhex(private_key))
+        public_key = pk.publicKey()
+        return '02' + ('03' if public_key.point.y % 2 else '02') + public_key.point.x.hex().upper()
+    else:
         key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
         return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
-    else:
-        pk = PrivateKey().fromString(bytes.fromhex(private_key))
-        return '04' + pk.publicKey().toString().hex().upper()
 
 def public_key_to_address(public_key):
     output = []
