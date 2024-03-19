@@ -51,33 +51,37 @@ def private_key_to_wif(private_key):
         else: break
     return chars[0] * pad + result
 
-def generate_key_pair(process_id):
-    private_key = generate_private_key()
-    public_key = private_key_to_public_key(private_key)
-    address = public_key_to_address(public_key)
-    wif = private_key_to_wif(private_key)
-    
-    # Check and write address to file
-    check_and_write_address(process_id, public_key, address, private_key, wif)
+def generate_key_pair(process_id, target_address):
+    while True:
+        private_key = generate_private_key()
+        public_key = private_key_to_public_key(private_key)
+        address = public_key_to_address(public_key)
+        wif = private_key_to_wif(private_key)
 
-def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif):
-    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
+        # Check and write address to file
+        check_and_write_address(process_id, public_key, address, private_key, wif, target_address)
+
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif, target_address):
+    print(f"Process {process_id}: Private Key: {private_key}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
     if bitcoin_address == target_address:
+        print(f"Process {process_id}: Target Address Found!")
         with open('F13.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
             found_file.write(f"Private Key (Hex): {private_key}\n")
             found_file.write(f"WIF: {wif}\n")
             found_file.write(f"Public Key: {public_key}\n")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
         return True
     return False
 
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
+    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
 
     # Start each process with a unique identifier
-    pool.map(generate_key_pair, range(num_processes))
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
