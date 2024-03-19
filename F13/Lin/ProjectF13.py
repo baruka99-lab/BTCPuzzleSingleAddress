@@ -6,23 +6,21 @@ from Crypto.Hash import RIPEMD
 import base58check
 from multiprocessing import Pool, cpu_count
 import secrets
-import fastecdsa.keys
-import fastecdsa.curve
-from fastecdsa.encoding.sec1 import SEC1Encoder
+from fastecdsa import keys, curve, encoding
 
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbits(65) + (1 << 65)
+        secret_exponent = secrets.randbelow(1 << 25 - 1) + (1 << 24)
 
         # Преобразование случайного числа в приватный ключ
-        private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.P256)
+        private_key = keys.gen_private_key(curve.secp256k1)
 
-        # Получение полного публичного ключа
-        public_key = fastecdsa.keys.get_public_key(private_key, curve=fastecdsa.curve.P256)
+        # Получение публичного ключа
+        public_key = keys.get_public_key(private_key, curve.secp256k1)
 
         # Сжатие публичного ключа вручную
-        compressed_public_key = SEC1Encoder().encode_public_key(public_key, compressed=True)
+        compressed_public_key = encoding.sec1.SEC1Encoder().encode_public_key(public_key, compressed=True)
 
         # Хеширование публичного ключа для получения отпечатка
         h = RIPEMD.new()
@@ -40,32 +38,18 @@ def generate_key_pair(process_id):
         # Формирование биткоин-адреса в base58check
         bitcoin_address = base58.b58encode(prefixed_public_key_hash + checksum).decode('utf-8')
 
-        # Вывод сгенерированного адреса и приватного ключа в консоль
-        print(f"Process {process_id}: Generated Bitcoin Address: {bitcoin_address}")
-        print(f"Process {process_id}: Generated Private Key: {private_key:x}")
-
         # Приватный ключ в десятичном формате
-        private_key_decimal = int(private_key)
+        private_key_decimal = int.from_bytes(private_key, byteorder='big')
 
-        # Проверка и запись в файл found.txt или address.txt
-        check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal)
-
-def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
-    target_address = "YOUR_TARGET_ADDRESS_HERE"  # Замените на ваш целевой адрес
-
-    if bitcoin_address == target_address:
-        # Запись найденного адреса и приватного ключа в файл
+        # Запись сгенерированных адреса и приватного ключа в файл
         with open('F13.txt', 'a') as found_file:
-            found_file.write(f"Found Bitcoin Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Hex): {private_key:x}\n")
+            found_file.write(f"Bitcoin Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Hex): {private_key.hex()}\n")
             found_file.write(f"Private Key (Decimal): {private_key_decimal}\n")
-        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
-        print(f"Process {process_id}: Compressed Public Key: {compressed_public_key.hex()}")
-        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
-    else:
-        print(f"Process {process_id}: Generated Bitcoin Address: {bitcoin_address}")
-        print(f"Process {process_id}: Generated Private Key: {private_key:x}")
+        # Вывод сгенерированных адреса и приватного ключа в консоль
+        print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}")
+        print(f"Process {process_id}: Private Key (Decimal): {private_key_decimal}")
 
 if __name__ == '__main__':
     num_processes = cpu_count()
