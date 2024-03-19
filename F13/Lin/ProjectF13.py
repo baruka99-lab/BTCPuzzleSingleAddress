@@ -3,25 +3,21 @@ from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
 import random
-import base58
 
 def generate_private_key():
-    return int(hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64), 16)
+    return hex((random.randrange((1 << 25) - 1) + (1 << 24)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
-    public_key = keys.get_public_key(private_key, curve.secp256k1)
-    x = hex(public_key.x)[2:].zfill(64)
-    y = hex(public_key.y)[2:].zfill(64)
+    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
     if compressed:
-        prefix = '02' if public_key.y % 2 == 0 else '03'
-        return prefix + x
+        return '04' + (hex(key.x)[2:] + hex(key.y)[2:]).zfill(128)
     else:
-        return '04' + x + y
+        return '04' + (hex(key.x)[2:].zfill(64) + hex(key.y)[2:].zfill(64))
 
 def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
-    encoding = binascii.unhexlify(public_key)
+    encoding = binascii.unhexlify(public_key.encode())
     var.update(hashlib.sha256(encoding).digest())
     var_encoded = ('00' + var.hexdigest()).encode()
     digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
@@ -36,38 +32,23 @@ def public_key_to_address(public_key):
         output.append(alphabet[0])
     return ''.join(output[::-1])
 
-def private_key_to_wif(private_key):
-    hex_key = private_key[2:]  # Удаляем префикс "0x"
-    if len(hex_key) % 2 != 0:
-        hex_key = '0' + hex_key  # Дополняем нулем, если нечетное количество символов
-    bin_key = binascii.unhexlify(hex_key)  # Преобразуем в бинарный формат
-    wif = base58.b58encode(bin_key)  # Кодируем в формат WIF
-    return wif.decode()  # Возвращаем строку
-
-def generate_key_pair(process_id, target_address, compressed=True):
+def generate_key_pair(process_id, target_address):
     while True:
         private_key = generate_private_key()
-        public_key = private_key_to_public_key(private_key, compressed=compressed)
+        public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
-        wif = private_key_to_wif(private_key)
+        
+        print(f"Process {process_id}: Private Key: {private_key}")
+        print(f"Process {process_id}: Bitcoin Address: {address}\n")
 
         # Check and write address to file
-        if check_and_write_address(process_id, public_key, address, private_key, wif, target_address):
+        if address == target_address:
+            print(f"Process {process_id}: Target Address Found!")
+            with open('F13.txt', 'a') as found_file:
+                found_file.write(f"Found Target Address: {address}\n")
+                found_file.write(f"Private Key (Hex): {private_key}\n")
+                found_file.write(f"Public Key: {public_key}\n")
             break
-
-def check_and_write_address(process_id, public_key, bitcoin_address, private_key, wif, target_address):
-    print(f"Process {process_id}: Private Key: {private_key}")
-    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-
-    if bitcoin_address == target_address:
-        print(f"Process {process_id}: Target Address Found!")
-        with open('F13.txt', 'a') as found_file:
-            found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Hex): {private_key}\n")
-            found_file.write(f"WIF: {wif}\n")
-            found_file.write(f"Public Key: {public_key}\n")
-        return True
-    return False
 
 if __name__ == '__main__':
     num_processes = cpu_count()
@@ -75,7 +56,7 @@ if __name__ == '__main__':
     target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
 
     # Start each process with a unique identifier
-    pool.starmap(generate_key_pair, [(i, target_address, True) for i in range(num_processes)])
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
