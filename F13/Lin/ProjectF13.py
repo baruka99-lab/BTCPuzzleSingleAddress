@@ -13,7 +13,7 @@ from fastecdsa.encoding.sec1 import SEC1Encoder
 def generate_key_pair(process_id):
     while True:
         # Генерация случайного числа в диапазоне с 2**65 до 2**66 - 1
-        secret_exponent = secrets.randbelow(1 << 25 - 1) + (1 << 24)
+        secret_exponent = secrets.randbelow(1 << 15 - 1) + (1 << 14)
 
         # Преобразование случайного числа в приватный ключ
         private_key = fastecdsa.keys.gen_private_key(fastecdsa.curve.P256)
@@ -52,7 +52,7 @@ def generate_key_pair(process_id):
 
 def check_and_write_address(process_id, compressed_public_key, bitcoin_address, private_key, private_key_decimal):
     # Проверка наличия определенного адреса
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
+    target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"  # Целевой адрес
     if bitcoin_address == target_address:
         # Запись найденного адреса в файл
         with open('F13.txt', 'a') as found_file:
