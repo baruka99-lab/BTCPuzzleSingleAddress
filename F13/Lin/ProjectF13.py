@@ -19,7 +19,7 @@ def generate_key_pair(process_id):
         # Получение публичного ключа
         public_key = keys.get_public_key(private_key, curve.secp256k1)
 
-        # Сжатие публичного ключа вручную
+        # Сжатие публичного ключа
         compressed_public_key = encoding.sec1.SEC1Encoder().encode_public_key(public_key, compressed=True)
 
         # Хеширование публичного ключа для получения отпечатка
