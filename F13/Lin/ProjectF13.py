@@ -1,37 +1,23 @@
-from fastecdsa import keys, curve
-from ellipticcurve.privateKey import PrivateKey
+from fastecdsa import keys, curve, ecdsa
 from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
-import os
 import random
 
 def generate_private_key():
-    return hex((random.randrange(1 << 25 - 1) + (1 << 24)))[2:].upper().zfill(64)
+    return keys.gen_private_key(curve.secp256k1)
 
-def private_key_to_public_key(private_key, fastecdsa=True, compressed=True):
-    if fastecdsa:
-        key = keys.get_public_key(int('0x' + private_key, 0), curve.secp256k1)
-        x_hex = hex(key.x)[2:].zfill(64)
-        y_hex = hex(key.y)[2:].zfill(64)
-        if compressed:
-            prefix = '02' if key.y % 2 == 0 else '03'
-            return prefix + x_hex
-        else:
-            return '04' + x_hex + y_hex
+def private_key_to_public_key(private_key, compressed=True):
+    key = ecdsa.PrivateKey(private_key, curve=curve.secp256k1)
+    if compressed:
+        return key.get_verifying_key().to_string('compressed').hex()
     else:
-        pk = PrivateKey().fromString(bytes.fromhex(private_key))
-        if compressed:
-            return '02' + pk.publicKey().toString().hex().upper()[:64]
-        else:
-            return '04' + pk.publicKey().toString().hex().upper()
+        return key.get_verifying_key().to_string('uncompressed').hex()
 
-def public_key_to_address(public_key, compressed=True):
+def public_key_to_address(public_key):
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
-    encoding = binascii.unhexlify(public_key.encode())
-    if compressed:
-        encoding = binascii.unhexlify(compress_public_key(public_key))
+    encoding = binascii.unhexlify(public_key)
     var.update(hashlib.sha256(encoding).digest())
     var_encoded = ('00' + var.hexdigest()).encode()
     digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
@@ -46,34 +32,14 @@ def public_key_to_address(public_key, compressed=True):
         output.append(alphabet[0])
     return ''.join(output[::-1])
 
-def compress_public_key(public_key):
-    # Compress public key by removing the prefix and using only x-coordinate
-    prefix = public_key[:2]
-    x_coordinate = public_key[2:]
-    return x_coordinate
-
 def private_key_to_wif(private_key):
-    digest = hashlib.sha256(binascii.unhexlify('80' + private_key)).hexdigest()
-    var = hashlib.sha256(binascii.unhexlify(digest)).hexdigest()
-    var = binascii.unhexlify('80' + private_key + var[0:8])
-    alphabet = chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-    value = pad = 0
-    result = ''
-    for i, c in enumerate(var[::-1]): value += 256**i * c
-    while value >= len(alphabet):
-        div, mod = divmod(value, len(alphabet))
-        result, value = chars[mod] + result, div
-    result = chars[value] + result
-    for c in var:
-        if c == 0: pad += 1
-        else: break
-    return chars[0] * pad + result
+    return keys.get_wif(int(private_key, 16), compressed=True, version=0x80)
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
         private_key = generate_private_key()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
-        address = public_key_to_address(public_key, compressed=compressed)
+        address = public_key_to_address(public_key)
         wif = private_key_to_wif(private_key)
 
         # Check and write address to file
