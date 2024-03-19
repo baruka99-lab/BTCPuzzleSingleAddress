@@ -1,3 +1,5 @@
+print("Start!")
+
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
