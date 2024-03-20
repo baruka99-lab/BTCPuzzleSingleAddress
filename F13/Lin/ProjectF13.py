@@ -1,5 +1,5 @@
-import subprocess
-import sys
+print("Start!")
+
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
@@ -59,7 +59,7 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
         return True
     return False
 
-def run_program():
+if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
@@ -69,9 +69,3 @@ def run_program():
 
     pool.close()
     pool.join()
-
-if __name__ == '__main__':
-    while True:
-        run_program()
-        print("Restarting the program...")
-        subprocess.run([sys.executable] + sys.argv)
