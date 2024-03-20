@@ -1,5 +1,5 @@
-import time
 import subprocess
+import sys
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
@@ -72,12 +72,6 @@ def run_program():
 
 if __name__ == '__main__':
     while True:
-        start_time = time.time()  # Запоминаем время начала выполнения программы
-
-        run_program()  # Запускаем программу
-
-        elapsed_time = time.time() - start_time  # Вычисляем время, прошедшее с начала выполнения программы
-        remaining_time = max(3 - elapsed_time, 0)  # Вычисляем оставшееся время для ожидания перед перезапуском
-
-        print(f"Restarting the program in {remaining_time:.2f} seconds...")
-        time.sleep(remaining_time)  # Ожидаем до конца 3 секунд и затем перезапускаем
+        run_program()
+        print("Restarting the program...")
+        subprocess.run([sys.executable] + sys.argv)
