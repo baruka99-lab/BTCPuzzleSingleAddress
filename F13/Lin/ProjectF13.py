@@ -1,5 +1,4 @@
-print("Start!")
-
+from concurrent.futures import ThreadPoolExecutor
 from fastecdsa import keys, curve
 import hashlib
 import binascii
@@ -7,10 +6,10 @@ import random
 
 def generate_private_key():
     while True:
-        private_key = hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].zfill(64)
+        private_key = hex((random.randrange((1 << 24) - 1) + (1 << 24)))[2:].zfill(64)
         public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
-        if address.startswith('13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so'):  # Проверяем, начинается ли адрес на "13z"
+        if address.startswith('15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP'):
             return private_key
 
 def private_key_to_public_key(private_key, compressed=True):
@@ -55,4 +54,6 @@ def write_and_print_results(public_key, address, private_key):
     print()
 
 if __name__ == '__main__':
-    generate_key_pair()
+    num_threads = 12  # Задайте количество потоков
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = [executor.submit(generate_key_pair) for _ in range(num_threads)]
