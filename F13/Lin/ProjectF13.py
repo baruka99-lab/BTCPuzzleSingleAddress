@@ -40,29 +40,21 @@ def public_key_to_address(public_key):
     return ''.join(output[::-1])
 
 def generate_key_pair(process_id, compressed=True):
-    found_results = []  # Хранить найденные результаты в памяти
     while True:
         private_key = generate_private_key()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
+        write_and_print_results(public_key, address, private_key)
 
-        # Append result to the list
-        found_results.append((public_key, address, private_key))
-        if len(found_results) >= 1000:  # Записывать и выводить результаты порциями
-            write_and_print_results(found_results)
-            found_results = []
-
-def write_and_print_results(results):
+def write_and_print_results(public_key, address, private_key):
     with open('F13.txt', 'a') as found_file:
-        for public_key, address, private_key in results:
-            found_file.write(f"Found Address: {address}\n")
-            found_file.write(f"Private Key (Hex): {private_key}\n")
-            found_file.write(f"Public Key: {public_key}\n")
-            found_file.write("\n")
-            print(f"Found Address: {address}")
-            print(f"Private Key (Hex): {private_key}")
-            print(f"Public Key: {public_key}")
-            print()
+        found_file.write(f"Found Address: {address}\n")
+        found_file.write(f"Private Key (Hex): {private_key}\n")
+        found_file.write(f"Public Key: {public_key}\n")
+    print(f"Found Address: {address}")
+    print(f"Private Key (Hex): {private_key}")
+    print(f"Public Key: {public_key}")
+    print()
 
 if __name__ == '__main__':
     num_processes = cpu_count()
