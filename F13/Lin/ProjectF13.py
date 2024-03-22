@@ -2,12 +2,12 @@ import secp256k1 as ice
 
 def generate_and_check_private_key(private_key):
     try:
-        address_compressed = ice.privatekey_to_address(0, True, private_key)
+        address_compressed = ice.btc_pvk_to_address(private_key, True)
+        address_uncompressed = ice.btc_pvk_to_address(private_key, False)
         
         if address_compressed == '13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so':
-            address_uncompressed = ice.privatekey_to_address(0, False, private_key)
-            address_p2sh = ice.privatekey_to_address(1, True, private_key)
-            address_bech32 = ice.privatekey_to_address(2, True, private_key)
+            address_p2sh = ice.btc_pvk_to_address(private_key, True, True)
+            address_bech32 = ice.btc_pvk_to_address(private_key, True, False)
             
             print('[C]', address_compressed)
             print('[U]', address_uncompressed)
