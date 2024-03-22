@@ -7,7 +7,12 @@ import binascii
 import random
 
 def generate_private_key():
-    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].zfill(64)
+    while True:
+        private_key = hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].zfill(64)
+        public_key = private_key_to_public_key(private_key)
+        address = public_key_to_address(public_key)
+        if address.startswith('13z'):  # Проверяем, начинается ли адрес на "13z"
+            return private_key
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
