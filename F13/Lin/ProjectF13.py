@@ -2,28 +2,15 @@ import secp256k1 as ice
 
 def generate_and_check_private_key(private_key):
     try:
-        address_compressed = ice.privatekey_to_address(0, True, private_key)
-        address_uncompressed = ice.privatekey_to_address(0, False, private_key)
-        
-        if address_compressed == '13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so':
-            address_p2sh = ice.privatekey_to_address(1, True, private_key)
-            address_bech32 = ice.privatekey_to_address(2, True, private_key)
-            
-            wif = ice.btc_pvk_to_wif(private_key)
-            
-            print('[C]', address_compressed)
-            print('[U]', address_uncompressed)
-            print('[P2SH]', address_p2sh)
-            print('[Bech32]', address_bech32)
-            print('WIF:', wif)
-            
+        wif = ice.btc_pvk_to_wif(private_key)
+        public_key = ice.btc_wif_to_pubkey(wif)
+        address = ice.btc_pubkey_to_address(public_key)
+        if address == '13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so':
+            print(f'Private Key: {private_key}')
+            print(f'Address: {address}')
             with open("F13.txt", "a") as file:
                 file.write(f"Private Key: {private_key}\n")
-                file.write(f"Address (compressed): {address_compressed}\n")
-                file.write(f"Address (uncompressed): {address_uncompressed}\n")
-                file.write(f"Address (P2SH): {address_p2sh}\n")
-                file.write(f"Address (Bech32): {address_bech32}\n")
-                file.write(f"WIF: {wif}\n\n")
+                file.write(f"Address: {address}\n\n")
         
     except Exception as e:
         print(f"Error occurred for private key {private_key}: {e}")
