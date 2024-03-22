@@ -8,10 +8,10 @@ import random
 
 def generate_private_key():
     while True:
-        private_key = hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].zfill(64)
+        private_key = hex((random.randrange((1 << 159) - 1) + (1 << 159)))[2:].zfill(64)
         public_key = private_key_to_public_key(private_key)
         address = public_key_to_address(public_key)
-        if address.startswith('13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so'):  # Проверяем, начинается ли адрес на "13z"
+        if address.startswith('1NBC8uXJy1GiJ6drkiZa1WuKn51ps7EPTv'):  # Проверяем, начинается ли адрес на "13z"
             return private_key
 
 def private_key_to_public_key(private_key, compressed=True):
