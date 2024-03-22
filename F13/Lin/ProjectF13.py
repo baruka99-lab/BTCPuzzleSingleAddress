@@ -1,67 +1,84 @@
-print("Start!")
+using secp256k1;
+using System;
+using System.Diagnostics;
+using System.Security.Cryptography;
 
-from fastecdsa import keys, curve
-from multiprocessing import cpu_count, Pool
-import hashlib
-import binascii
-import random
+namespace BitcoinKeyGeneration
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            // Диапазон бит для генерации ключей
+            int bitRange = 66;
 
-def generate_private_key():
-    while True:
-        private_key = hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].zfill(64)
-        public_key = private_key_to_public_key(private_key)
-        address = public_key_to_address(public_key)
-        if address.startswith('13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so'):  # Проверяем, начинается ли адрес на "13z"
-            return private_key
+            // Префикс адреса
+            string addressPrefix = "13zb1";
 
-def private_key_to_public_key(private_key, compressed=True):
-    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
-    if compressed:
-        return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
-    else:
-        return '04' + (hex(key.x)[2:].zfill(64) + hex(key.y)[2:].zfill(64))
+            // Создание объекта для измерения времени выполнения
+            Stopwatch stopwatch = new Stopwatch();
 
-def public_key_to_address(public_key):
-    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-    var = hashlib.new('ripemd160')
-    encoding = binascii.unhexlify(public_key.encode())
-    var.update(hashlib.sha256(encoding).digest())
-    var_encoded = ('00' + var.hexdigest()).encode()
-    digest = hashlib.sha256(binascii.unhexlify(var_encoded)).digest()
-    var_hex = '00' + var.hexdigest() + hashlib.sha256(digest).hexdigest()[0:8]
-    count = [char != '0' for char in var_hex].index(True) // 2
-    n = int(var_hex, 16)
-    output = []
-    while n > 0:
-        n, remainder = divmod(n, 58)
-        output.append(alphabet[remainder])
-    for i in range(count):
-        output.append(alphabet[0])
-    return ''.join(output[::-1])
+            // Создание объекта библиотеки secp256k1
+            secp256k1.secp256k1 keyGenerator = new secp256k1.secp256k1();
+            keyGenerator.InitSecp256Lib();
 
-def generate_key_pair(process_id, compressed=True):
-    while True:
-        private_key = generate_private_key()
-        public_key = private_key_to_public_key(private_key, compressed=compressed)
-        address = public_key_to_address(public_key)
-        write_and_print_results(public_key, address, private_key)
+            // Переменная для хранения сгенерированного закрытого ключа
+            byte[] privateKeyBytes;
 
-def write_and_print_results(public_key, address, private_key):
-    with open('F13.txt', 'a') as found_file:
-        found_file.write(f"Found Address: {address}\n")
-        found_file.write(f"Private Key (Hex): {private_key}\n")
-        found_file.write(f"Public Key: {public_key}\n")
-    print(f"Found Address: {address}")
-    print(f"Private Key (Hex): {private_key}")
-    print(f"Public Key: {public_key}")
-    print()
+            // Переменная для хранения адреса
+            string address;
 
-if __name__ == '__main__':
-    num_processes = cpu_count()
-    pool = Pool(num_processes)
+            // Генерация ключей, пока не будет найден ключ, подходящий под условия
+            do
+            {
+                // Генерация случайного закрытого ключа
+                privateKeyBytes = GenerateRandomPrivateKey();
 
-    # Start each process with a unique identifier
-    pool.starmap(generate_key_pair, [(i,) for i in range(num_processes)])
+                // Преобразование закрытого ключа в адрес
+                address = keyGenerator.PrivateKeyToBitcoinAddress(BytesToHexString(privateKeyBytes));
 
-    pool.close()
-    pool.join()
+            } while (!IsWithinBitRange(privateKeyBytes, bitRange) || !address.StartsWith(addressPrefix));
+
+            // Вывод результатов
+            Console.WriteLine($"Сгенерированный закрытый ключ: {BytesToHexString(privateKeyBytes)}");
+            Console.WriteLine($"Соответствующий адрес: {address}");
+
+            // Остановка счетчика времени
+            stopwatch.Stop();
+            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+            Console.WriteLine($"Завершено за {elapsedMilliseconds} миллисекунд.");
+        }
+
+        // Метод для генерации случайного закрытого ключа
+        static byte[] GenerateRandomPrivateKey()
+        {
+            byte[] privateKey = new byte[32];
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(privateKey);
+            }
+            return privateKey;
+        }
+
+        // Метод для преобразования массива байт в строку в шестнадцатеричном формате
+        static string BytesToHexString(byte[] byteArray)
+        {
+            string hexString = "";
+            foreach (byte b in byteArray)
+            {
+                hexString += b.ToString("X2").ToLowerInvariant();
+            }
+            return hexString;
+        }
+
+        // Метод для проверки, находится ли закрытый ключ в заданном диапазоне бит
+        static bool IsWithinBitRange(byte[] privateKeyBytes, int bitRange)
+        {
+            // Вычисление количества бит в закрытом ключе
+            int bitCount = privateKeyBytes.Length * 8;
+
+            // Проверка, находится ли количество бит в допустимом диапазоне
+            return bitCount == bitRange;
+        }
+    }
+}
