@@ -1,16 +1,14 @@
 import secp256k1 as ice
 import hashlib
 import base58
+import secrets
 
 def generate_bitcoin_private_key():
-    # Generate a random 32-byte number (private key)
-    private_key_bytes = ice.random_scalar().to_bytes(32, byteorder='big')
-    
-    # Convert the private key bytes to an integer
-    private_key_int = int.from_bytes(private_key_bytes, byteorder='big')
+    # Generate a random 256-bit integer (private key)
+    private_key_int = secrets.randbelow(2**256)
     
     # Convert the private key to WIF format
-    wif_private_key = private_key_to_wif(private_key_bytes)
+    wif_private_key = private_key_to_wif(private_key_int.to_bytes(32, 'big'))
     
     # Get the Bitcoin address from the private key
     bitcoin_address = ice.privatekey_to_coinaddress(ice.COIN_BTC, 0, True, private_key_int)
