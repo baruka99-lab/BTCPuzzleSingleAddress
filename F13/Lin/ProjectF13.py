@@ -6,15 +6,15 @@ import binascii
 from multiprocessing import cpu_count, Pool
 from fastecdsa import keys, curve
 
-def generate_private_key_hex():
-    return hex(secrets.randbits(256))[2:].zfill(64)  # Генерация случайного числа в формате hex
+def generate_private_key_decimal():
+    return str(secrets.randbits(256))  # Генерация случайного числа
 
 def read_target_addresses(filename):
     with open(filename, 'r') as file:
         return [line.strip() for line in file]
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
+    key = keys.get_public_key(int(private_key), curve.secp256k1)
     if compressed:
         return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
     else:
@@ -40,25 +40,25 @@ def public_key_to_address(public_key):
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
-        private_key = generate_private_key_hex()  # Генерация приватного ключа в формате hex
+        private_key = generate_private_key_decimal()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
         if check_and_write_address(process_id, public_key, address, private_key, target_address):
-            # Выводим сообщение о нахождении целевого адреса и продолжаем генерацию
-            print(f"Process {process_id}: Target Address Found!")
-            print(f"Target Address: {address}")
-            print(f"Private Key: {private_key}\n")
-            with open('found_addresses.txt', 'a') as found_file:
-                found_file.write(f"Found Target Address: {address}\n")
-                found_file.write(f"Private Key (Hex): {private_key}\n")
-                found_file.write(f"Public Key: {public_key}\n")
-            # Выводим закрытый ключ и биткоин-адрес при каждой генерации
-            print(f"Process {process_id}: Private Key: {private_key}")
-            print(f"Process {process_id}: Bitcoin Address: {address}\n")
+            break
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
+    #print(f"Process {process_id}: Private Key: {private_key}")
+    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
     if bitcoin_address == target_address:
+        print(f"Process {process_id}: Target Address Found!")
+        print(f"Target Address: {bitcoin_address}")
+        print(f"Private Key: {private_key}")
+        with open('found_addresses.txt', 'a') as found_file:
+            found_file.write(f"Found Target Address: {bitcoin_address}\n")
+            found_file.write(f"Private Key (Decimal): {private_key}\n")
+            found_file.write(f"Public Key: {public_key}\n")
         return True
     return False
 
