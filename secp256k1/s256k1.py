@@ -11,8 +11,8 @@ def generate_bitcoin_private_key():
     # Convert the private key to WIF format
     wif_private_key = private_key_to_wif(private_key_int.to_bytes(32, 'big'))
     
-    # Get the Bitcoin address from the private key
-    bitcoin_address = private_key_to_address(private_key_int)
+    # Get the compressed Bitcoin address from the private key
+    bitcoin_address = private_key_to_address(private_key_int, compressed=True)
     
     return wif_private_key, bitcoin_address
 
@@ -35,9 +35,9 @@ def private_key_to_wif(private_key_bytes):
     
     return wif_private_key.decode('utf-8')
 
-def private_key_to_address(private_key_int):
-    # Get the Bitcoin address
-    bitcoin_address = bitcoin.privkey_to_address(private_key_int, magicbyte=0)
+def private_key_to_address(private_key_int, compressed=True):
+    # Get the compressed or uncompressed Bitcoin address
+    bitcoin_address = bitcoin.privkey_to_address(private_key_int, compressed=compressed)
     
     return bitcoin_address
 
