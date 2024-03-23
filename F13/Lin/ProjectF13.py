@@ -3,11 +3,12 @@ from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
 import random
+import time
 
 def generate_private_key_decimal():
     min_value = 1 << 65
     max_value = (1 << 66) - 1
-    return str(random.randint(min_value, max_value))  # Генерация случайного числа в заданном диапазоне
+    return str(random.randint(min_value, max_value))  
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key), curve.secp256k1)
@@ -35,11 +36,10 @@ def public_key_to_address(public_key):
     return ''.join(output[::-1])
 
 def generate_key_pair(process_id, target_address, compressed=True):
-    private_key_counter = 0  # Инициализация счетчика приватных ключей
-
+    private_key_counter = 0  
     while True:
         private_key = generate_private_key_decimal()
-        private_key_counter += 1  # Инкрементация счетчика при каждой генерации приватного ключа
+        private_key_counter += 1  
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
@@ -50,8 +50,8 @@ def generate_key_pair(process_id, target_address, compressed=True):
     print(f"Process {process_id}: Total private keys generated: {private_key_counter}")
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
-    #print(f"Process {process_id}: Private Key: {private_key}")
-    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+    print(f"Process {process_id}: Private Key: {private_key}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
@@ -67,10 +67,15 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  
 
-    # Start each process with a unique identifier
+    start_time = time.time()  
+
     pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
+
+    end_time = time.time()  
+
+    print(f"Total execution time: {end_time - start_time} seconds")
