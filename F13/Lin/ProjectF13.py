@@ -45,8 +45,8 @@ def generate_key_pair(process_id, target_address, compressed=True):
             break
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
-    print(f"Process {process_id}: Private Key: {private_key}")
-    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+    #print(f"Process {process_id}: Private Key: {private_key}")
+    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
