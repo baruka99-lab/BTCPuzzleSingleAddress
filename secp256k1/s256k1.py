@@ -2,7 +2,8 @@ import secp256k1 as ice
 import hashlib
 import base58
 import secrets
-import bitcoin
+from bitcoinlib.keys import PrivateKey
+from bitcoinlib.encoding import public_key_to_p2wpkh
 
 def generate_bitcoin_private_key():
     # Generate a random 256-bit integer (private key)
@@ -37,10 +38,10 @@ def private_key_to_wif(private_key_bytes):
 
 def private_key_to_address(private_key_int):
     # Create PrivateKey object from integer private key
-    private_key = bitcoin.PrivateKey(secret_exponent=private_key_int)
+    private_key = PrivateKey(private_key_int)
     
     # Get the compressed Bitcoin address
-    bitcoin_address = private_key.public_key().address()
+    bitcoin_address = private_key.address(compressed=True)
     
     return bitcoin_address
 
