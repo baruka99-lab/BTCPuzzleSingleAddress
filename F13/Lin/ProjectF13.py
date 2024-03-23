@@ -40,7 +40,7 @@ def public_key_to_address(public_key):
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
-        private_key = generate_private_key_decimal()
+        private_key = hex(secrets.randbits(256))[2:].zfill(64)  # Генерация приватного ключа в формате hex
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
@@ -51,14 +51,11 @@ def generate_key_pair(process_id, target_address, compressed=True):
             print(f"Private Key: {private_key}\n")
             with open('found_addresses.txt', 'a') as found_file:
                 found_file.write(f"Found Target Address: {address}\n")
-                found_file.write(f"Private Key (Decimal): {private_key}\n")
+                found_file.write(f"Private Key (Hex): {private_key}\n")
                 found_file.write(f"Public Key: {public_key}\n")
-        else:
-            # Выводим сообщение о том, что адрес не найден и продолжаем генерацию
-            print(f"Process {process_id}: Address not found.")
-        # Выводим закрытый ключ и биткоин-адрес при каждой генерации
-        print(f"Process {process_id}: Private Key: {private_key}")
-        print(f"Process {process_id}: Bitcoin Address: {address}\n")
+            # Выводим закрытый ключ и биткоин-адрес при каждой генерации
+            print(f"Process {process_id}: Private Key: {private_key}")
+            print(f"Process {process_id}: Bitcoin Address: {address}\n")
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
     if bitcoin_address == target_address:
