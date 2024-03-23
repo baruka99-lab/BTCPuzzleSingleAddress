@@ -36,8 +36,11 @@ def private_key_to_wif(private_key_bytes):
     return wif_private_key.decode('utf-8')
 
 def private_key_to_address(private_key_int):
+    # Create PrivateKey object from integer private key
+    private_key = bitcoin.PrivateKey(secret_exponent=private_key_int)
+    
     # Get the compressed Bitcoin address
-    bitcoin_address = bitcoin.privkey_to_address(private_key_int, compressed=True)
+    bitcoin_address = private_key.public_key().address()
     
     return bitcoin_address
 
