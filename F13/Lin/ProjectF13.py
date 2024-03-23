@@ -1,13 +1,17 @@
-from fastecdsa import keys, curve
-from multiprocessing import cpu_count, Pool
+import secrets
 import hashlib
 import binascii
-import random
+from multiprocessing import cpu_count, Pool
+from fastecdsa import keys, curve
 
 def generate_private_key_decimal():
-    min_value = 1 << 65
-    max_value = (1 << 66) - 1
-    return str(random.randint(min_value, max_value))  # Генерация случайного числа в заданном диапазоне
+    min_value = 1 << 14
+    max_value = (1 << 15) - 1
+    return str(secrets.randbelow(max_value - min_value) + min_value)
+
+def read_target_addresses(filename):
+    with open(filename, 'r') as file:
+        return [line.strip() for line in file]
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key), curve.secp256k1)
@@ -40,19 +44,15 @@ def generate_key_pair(process_id, target_address, compressed=True):
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
-        # Check and write address to file
         if check_and_write_address(process_id, public_key, address, private_key, target_address):
             break
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
-    #print(f"Process {process_id}: Private Key: {private_key}")
-    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
         print(f"Target Address: {bitcoin_address}")
         print(f"Private Key: {private_key}")
-        with open('F13.txt', 'a') as found_file:
+        with open('found_addresses.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
             found_file.write(f"Private Key (Decimal): {private_key}\n")
             found_file.write(f"Public Key: {public_key}\n")
@@ -62,10 +62,9 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
-    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
+    target_addresses = read_target_addresses("target_addresses.txt")
 
-    # Start each process with a unique identifier
-    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes) for target_address in target_addresses])
 
     pool.close()
     pool.join()
