@@ -6,15 +6,15 @@ import binascii
 from multiprocessing import cpu_count, Pool
 from fastecdsa import keys, curve
 
-def generate_private_key_decimal():
-    return str(secrets.randbits(256))  # Генерация случайного числа
+def generate_private_key_hex():
+    return hex(secrets.randbits(256))[2:].zfill(64)  # Генерация случайного числа в формате hex
 
 def read_target_addresses(filename):
     with open(filename, 'r') as file:
         return [line.strip() for line in file]
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = keys.get_public_key(int(private_key), curve.secp256k1)
+    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
     if compressed:
         return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
     else:
@@ -40,7 +40,7 @@ def public_key_to_address(public_key):
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
-        private_key = hex(secrets.randbits(256))[2:].zfill(64)  # Генерация приватного ключа в формате hex
+        private_key = generate_private_key_hex()  # Генерация приватного ключа в формате hex
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
