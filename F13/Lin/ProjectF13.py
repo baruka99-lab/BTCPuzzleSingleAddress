@@ -5,9 +5,7 @@ from multiprocessing import cpu_count, Pool
 from fastecdsa import keys, curve
 
 def generate_private_key_decimal():
-    min_value = 1 << 14
-    max_value = (1 << 15) - 1
-    return str(secrets.randbelow(max_value - min_value) + min_value)
+    return str(secrets.randbits(256))  # Генерация случайного числа
 
 def read_target_addresses(filename):
     with open(filename, 'r') as file:
@@ -48,6 +46,9 @@ def generate_key_pair(process_id, target_address, compressed=True):
             break
 
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
+    print(f"Process {process_id}: Private Key: {private_key}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
         print(f"Target Address: {bitcoin_address}")
