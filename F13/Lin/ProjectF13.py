@@ -1,16 +1,16 @@
-print("Start!")
-
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
 import random
 
-def generate_private_key():
-    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(64)
+def generate_private_key_decimal():
+    min_value = 1 << 65
+    max_value = (1 << 66) - 1
+    return str(random.randint(min_value, max_value))  # Генерация случайного числа в заданном диапазоне
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
+    key = keys.get_public_key(int(private_key), curve.secp256k1)
     if compressed:
         return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
     else:
@@ -36,7 +36,7 @@ def public_key_to_address(public_key):
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
-        private_key = generate_private_key()
+        private_key = generate_private_key_decimal()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
@@ -54,7 +54,7 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
         print(f"Private Key: {private_key}")
         with open('F13.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Hex): {private_key}\n")
+            found_file.write(f"Private Key (Decimal): {private_key}\n")
             found_file.write(f"Public Key: {public_key}\n")
         return True
     return False
