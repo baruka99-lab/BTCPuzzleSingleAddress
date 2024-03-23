@@ -38,21 +38,17 @@ def public_key_to_address(public_key):
         output.append(0)
     return ''.join(alphabet[i] for i in output[::-1])
 
-def generate_key_pair(target_address, compressed=True):
+def generate_key_pair(process_id, target_address, compressed=True):
     while True:
         private_key = generate_private_key_decimal()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
-        if check_and_write_address(public_key, address, private_key, target_address):
-            break
-
-def check_and_write_address(public_key, bitcoin_address, private_key, target_address):
-    print(f"Process {process_id}: Private Key: {private_key}")
-    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
-    
+        if check_and_write_address(process_id, public_key, address, private_key, target_address):
+       
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
     if bitcoin_address == target_address:
-        print(f"Target Address Found!")
+        print(f"Process {process_id}: Target Address Found!")
         print(f"Target Address: {bitcoin_address}")
         print(f"Private Key: {private_key}")
         with open('found_addresses.txt', 'a') as found_file:
