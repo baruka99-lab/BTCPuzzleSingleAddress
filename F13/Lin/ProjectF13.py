@@ -1,10 +1,10 @@
-from array import array
-from threading import Thread
-from fastecdsa import keys, curve
+import secrets
 import hashlib
 import binascii
-import secrets
 from multiprocessing import cpu_count
+from fastecdsa import keys, curve
+from array import array
+from threading import Thread
 
 def generate_private_key_decimal():
     return str(secrets.randbits(256))  # Генерация случайного числа
@@ -44,9 +44,12 @@ def generate_key_pair(process_id, target_address, compressed=True):
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
-        if check_and_write_address(process_id, public_key, address, private_key, target_address):
-       
+        check_and_write_address(process_id, public_key, address, private_key, target_address)
+
 def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
+    print(f"Process {process_id}: Private Key: {private_key}")
+    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
     if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
         print(f"Target Address: {bitcoin_address}")
@@ -62,7 +65,7 @@ if __name__ == '__main__':
     num_threads = cpu_count()
     target_addresses = read_target_addresses("target_addresses.txt")
     
-    threads = [Thread(target=generate_key_pair, args=(target_address,)) for target_address in target_addresses]
+    threads = [Thread(target=generate_key_pair, args=(i, target_address)) for i in range(num_threads) for target_address in target_addresses]
     for thread in threads:
         thread.start()
     for thread in threads:
