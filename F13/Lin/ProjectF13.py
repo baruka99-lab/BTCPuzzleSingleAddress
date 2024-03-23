@@ -1,20 +1,16 @@
-print("Захотел халявные битки? Ну удачи!)))")
+print("Start!")
 
-import secrets
+from fastecdsa import keys, curve
+from multiprocessing import cpu_count, Pool
 import hashlib
 import binascii
-from multiprocessing import cpu_count, Pool
-from fastecdsa import keys, curve
+import random
 
-def generate_private_key_decimal():
-    return str(secrets.randbits(256))  # Генерация случайного числа
-
-def read_target_addresses(filename):
-    with open(filename, 'r') as file:
-        return [line.strip() for line in file]
+def generate_private_key():
+    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
-    key = keys.get_public_key(int(private_key), curve.secp256k1)
+    key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
     if compressed:
         return '02' + hex(key.x)[2:].zfill(64) if key.y % 2 == 0 else '03' + hex(key.x)[2:].zfill(64)
     else:
@@ -40,10 +36,11 @@ def public_key_to_address(public_key):
 
 def generate_key_pair(process_id, target_address, compressed=True):
     while True:
-        private_key = generate_private_key_decimal()
+        private_key = generate_private_key()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
+        # Check and write address to file
         if check_and_write_address(process_id, public_key, address, private_key, target_address):
             break
 
@@ -55,9 +52,9 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
         print(f"Process {process_id}: Target Address Found!")
         print(f"Target Address: {bitcoin_address}")
         print(f"Private Key: {private_key}")
-        with open('found_addresses.txt', 'a') as found_file:
+        with open('F13.txt', 'a') as found_file:
             found_file.write(f"Found Target Address: {bitcoin_address}\n")
-            found_file.write(f"Private Key (Decimal): {private_key}\n")
+            found_file.write(f"Private Key (Hex): {private_key}\n")
             found_file.write(f"Public Key: {public_key}\n")
         return True
     return False
@@ -65,9 +62,10 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
 if __name__ == '__main__':
     num_processes = cpu_count()
     pool = Pool(num_processes)
-    target_addresses = read_target_addresses("target_addresses.txt")
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
 
-    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes) for target_address in target_addresses])
+    # Start each process with a unique identifier
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
