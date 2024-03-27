@@ -1,3 +1,5 @@
+print("...")
+
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
 import hashlib
@@ -32,19 +34,19 @@ def public_key_to_address(public_key):
         output.append(alphabet[0])
     return ''.join(output[::-1])
 
-def generate_key_pair(process_id, start_range, end_range, target_address, compressed=True):
+def generate_key_pair(process_id, target_address, compressed=True):
     while True:
         private_key = generate_private_key()
         public_key = private_key_to_public_key(private_key, compressed=compressed)
         address = public_key_to_address(public_key)
 
         # Check and write address to file
-        if check_and_write_address(process_id, private_key, public_key, address, target_address):
+        if check_and_write_address(process_id, public_key, address, private_key, target_address):
             break
 
-def check_and_write_address(process_id, private_key, public_key, bitcoin_address, target_address):
-    print(f"Process {process_id}: Private Key: {private_key}")
-    print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
+    #print(f"Process {process_id}: Private Key: {private_key}")
+    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
 
     if bitcoin_address == target_address:
         print("Process {}: Target Address Found!".format(process_id))
@@ -59,15 +61,11 @@ def check_and_write_address(process_id, private_key, public_key, bitcoin_address
 
 if __name__ == '__main__':
     num_processes = cpu_count()
+    pool = Pool(num_processes)
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
-    key_range = (1 << 65) // num_processes  # Размер каждой части диапазона
 
     # Start each process with a unique identifier
-    pool = Pool(num_processes)
-    for i in range(num_processes):
-        start_range = i * key_range
-        end_range = (i + 1) * key_range if i != num_processes - 1 else (1 << 65) - 1
-        pool.apply_async(generate_key_pair, args=(i, start_range, end_range, target_address))
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
