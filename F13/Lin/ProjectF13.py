@@ -29,6 +29,9 @@ def worker(num_zeros, num_ones, stop_event):
         sk = keys.gen_keypair(curve=curve.secp256k1)
         public_key = keys.get_public_key(sk, curve=curve.secp256k1)
 
+        # Convert d to an integer if it's a tuple
+        d = sk[0] if isinstance(sk, tuple) else sk
+
         compressed_public_key = '02' + public_key[0] if public_key[1] % 2 == 0 else '03' + public_key[0]
         compressed_public_key_bytes = bytes.fromhex(compressed_public_key)
 
