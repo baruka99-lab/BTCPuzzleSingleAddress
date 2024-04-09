@@ -10,7 +10,6 @@ def binary_to_hex(bin_string):
     return hex(int(bin_string, 2))[2:].zfill(len(bin_string) // 4)
 
 def worker(num_zeros, num_ones, stop_event):
-
     target_hash = "20d45a6a762535700ce9e0b216e31994335db8a5"
 
     while True:
@@ -26,7 +25,10 @@ def worker(num_zeros, num_ones, stop_event):
         private_key_bin = '0' * (256 - 66) + private_key_bin
         private_key_hex = binary_to_hex(private_key_bin)
 
-        sk = keys.gen_keypair(curve=curve.secp256k1)
+        # Generate key pair
+        sk, _ = keys.gen_keypair(curve=curve.secp256k1)
+        
+        # Get public key
         public_key = keys.get_public_key(sk, curve=curve.secp256k1)
 
         # Convert d to an integer if it's a tuple
@@ -68,3 +70,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
