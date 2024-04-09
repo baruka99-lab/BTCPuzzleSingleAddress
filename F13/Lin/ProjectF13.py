@@ -26,7 +26,7 @@ def worker(num_zeros, num_ones, stop_event):
         private_key_bin = '0' * (256 - 66) + private_key_bin
         private_key_hex = binary_to_hex(private_key_bin)
 
-        sk = keys.SigningKey.from_string(bytes.fromhex(private_key_hex), curve=fastecdsa.curve.secp256k1)
+        sk = keys.gen_keypair(curve=fastecdsa.curve.secp256k1)
         public_key = keys.get_public_key(sk)
 
         compressed_public_key = '02' + public_key[0] if public_key[1] % 2 == 0 else '03' + public_key[0]
