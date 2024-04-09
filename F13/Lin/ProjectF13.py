@@ -1,3 +1,5 @@
+print(".........................................................................................................")
+
 import hashlib
 import fastecdsa
 from fastecdsa import keys
