@@ -1,13 +1,14 @@
-print("Start!")
+print("...")
 
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
+import multiprocessing
 import hashlib
 import binascii
 import random
 
 def generate_private_key():
-    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(64)
+    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(16)
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
@@ -60,7 +61,7 @@ def check_and_write_address(process_id, public_key, bitcoin_address, private_key
     return False
 
 if __name__ == '__main__':
-    num_processes = cpu_count()
+    num_processes = 200
     pool = Pool(num_processes)
     target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
 
