@@ -1,10 +1,11 @@
 print("Start!")
 
-from fastecdsa import keys, curve
-from multiprocessing import cpu_count, Pool
+import multiprocessing
 import hashlib
 import binascii
 import random
+from fastecdsa import keys, curve
+from multiprocessing import cpu_count, Pool
 
 def generate_private_key():
     return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(64)
