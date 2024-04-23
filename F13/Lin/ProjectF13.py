@@ -1,11 +1,12 @@
-print(".........................................................................................................")
-
 import os
 import hashlib
 import random
 import time
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
+import binascii
+
+print(".........................................................................................................")
 
 def generate_private_key():
     return hex((random.randrange((1 << 25) - 1) + (1 << 25)))[2:].upper().zfill(64)
