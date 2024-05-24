@@ -1,15 +1,15 @@
-import os
+
+print("Start!")
+
+import multiprocessing
 import hashlib
+import binascii
 import random
-import time
 from fastecdsa import keys, curve
 from multiprocessing import cpu_count, Pool
-import binascii
-
-print(".........................................................................................................")
 
 def generate_private_key():
-    return hex((random.randrange((1 << 25) - 1) + (1 << 25)))[2:].upper().zfill(64)
+    return hex((random.randrange((1 << 65) - 1) + (1 << 65)))[2:].upper().zfill(64)
 
 def private_key_to_public_key(private_key, compressed=True):
     key = keys.get_public_key(int(private_key, 16), curve.secp256k1)
@@ -33,50 +33,41 @@ def public_key_to_address(public_key):
         n, remainder = divmod(n, 58)
         output.append(alphabet[remainder])
     for i in range(count):
-        output.append(alphabet)
+        output.append(alphabet[0])
     return ''.join(output[::-1])
 
 def generate_key_pair(process_id, target_address, compressed=True):
-    private_key = generate_private_key()
-    public_key = private_key_to_public_key(private_key, compressed=compressed)
-    address = public_key_to_address(public_key)
+    while True:
+        private_key = generate_private_key()
+        public_key = private_key_to_public_key(private_key, compressed=compressed)
+        address = public_key_to_address(public_key)
 
-    if address == target_address:
+        # Check and write address to file
+        if check_and_write_address(process_id, public_key, address, private_key, target_address):
+            break
+
+def check_and_write_address(process_id, public_key, bitcoin_address, private_key, target_address):
+    #print(f"Process {process_id}: Private Key: {private_key}")
+    #print(f"Process {process_id}: Bitcoin Address: {bitcoin_address}\n")
+
+    if bitcoin_address == target_address:
         print(f"Process {process_id}: Target Address Found!")
-        print(f"Target Address: {address}")
+        print(f"Target Address: {bitcoin_address}")
         print(f"Private Key: {private_key}")
         with open('F13.txt', 'a') as found_file:
-            found_file.write(f"Found Target Address: {address}\n")
+            found_file.write(f"Found Target Address: {bitcoin_address}\n")
             found_file.write(f"Private Key (Hex): {private_key}\n")
             found_file.write(f"Public Key: {public_key}\n")
         return True
     return False
 
-def baby_step_giant_step(target_address, num_processes):
+if __name__ == '__main__':
+    num_processes = cpu_count()
     pool = Pool(num_processes)
-    addresses = []
+    target_address = "13zb1hQbWVsc2S7ZTZnP2G4undNNpdh5so"  # Целевой адрес
 
-    for i in range(num_processes):
-        pool.apply_async(generate_key_pair, (i, target_address))
+    # Start each process with a unique identifier
+    pool.starmap(generate_key_pair, [(i, target_address) for i in range(num_processes)])
 
     pool.close()
     pool.join()
-
-    for process in pool.imap_unordered(generate_key_pair, [(i, target_address) for i in range(num_processes)]):
-        if process:
-            addresses.append(process)
-
-    return addresses
-
-if __name__ == '__main__':
-    target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"  # Целевой адрес
-    num_processes = cpu_count()
-
-    start_time = time.time()
-    addresses = baby_step_giant_step(target_address, num_processes)
-    end_time = time.time()
-
-    print(f"Found {len(addresses)} addresses in {end_time - start_time} seconds.")
-
-    for address in addresses:
-        print(f"Address: {address}")
